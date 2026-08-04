@@ -44,7 +44,7 @@ def check_in(command: CheckInCommand, db: DbSession, user_id: CurrentUser) -> Pr
         return use_case.execute(user_id, command)
     except (UserNotActiveError, VerificationRequiredError):
         raise HTTPException(status_code=403, detail="FORBIDDEN") from None
-    except InvalidCheckInTokenError:
+    except (InvalidCheckInTokenError, VenueNotFoundError):
         raise HTTPException(status_code=404, detail="NOT_FOUND") from None
     except PresenceAlreadyActiveError:
         raise HTTPException(status_code=409, detail="INVALID_STATE_TRANSITION") from None
