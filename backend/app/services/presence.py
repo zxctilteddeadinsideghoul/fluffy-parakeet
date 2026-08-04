@@ -1,6 +1,6 @@
 """Use case: how many people are currently present at a venue."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.repositories.presence import PresenceRepository
 
@@ -18,5 +18,5 @@ class CountPresentUsersUseCase:
     def execute(self, venue_id: str, viewer_user_id: str | None = None) -> int:
         if not self.repository.venue_exists(venue_id):
             raise VenueNotFoundError(venue_id)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC).replace(tzinfo=None)
         return self.repository.count_visible_users(venue_id, viewer_user_id, now)

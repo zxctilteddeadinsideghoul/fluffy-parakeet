@@ -1,5 +1,7 @@
 """HTTP routes for the Presence context."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -19,8 +21,11 @@ def get_db() -> Session:
         db.close()
 
 
+DbSession = Annotated[Session, Depends(get_db)]
+
+
 @router.get("/count", response_model=VenuePresenceCount)
-def get_venue_presence_count(venue_id: str, db: Session = Depends(get_db)) -> VenuePresenceCount:
+def get_venue_presence_count(venue_id: str, db: DbSession) -> VenuePresenceCount:
     use_case = CountPresentUsersUseCase(PresenceRepository(db))
     try:
         count = use_case.execute(venue_id)

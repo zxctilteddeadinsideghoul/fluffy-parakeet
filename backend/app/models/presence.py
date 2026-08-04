@@ -58,7 +58,9 @@ class PresenceSession(Base):
             values_callable=lambda e: [m.value for m in e],
         )
     )
-    checked_in_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    checked_in_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow
+    )
     last_heartbeat_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
     )
