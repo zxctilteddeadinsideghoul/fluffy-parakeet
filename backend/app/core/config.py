@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     app_name: str = "fluffy-parakeet"
     environment: str = "development"
+    database_url: str = "sqlite:///./app.db"
 
 
 settings = Settings()
