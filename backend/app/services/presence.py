@@ -15,7 +15,7 @@ class CountPresentUsersUseCase:
     def __init__(self, repository: PresenceRepository):
         self.repository = repository
 
-    def execute(self, venue_id: str, viewer_user_id: str) -> int:
+    def execute(self, venue_id: str, viewer_user_id: str | None = None) -> int:
         if not self.repository.venue_exists(venue_id):
             raise VenueNotFoundError(venue_id)
         now = datetime.now(timezone.utc)

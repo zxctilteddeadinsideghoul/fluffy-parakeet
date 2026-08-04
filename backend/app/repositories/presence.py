@@ -19,14 +19,27 @@ class PresenceRepository:
     def venue_exists(self, venue_id: str) -> bool:
         return self.db.get(Venue, venue_id) is not None
 
-    def count_visible_users(self, venue_id: str, viewer_user_id: str, now: datetime) -> int:
+    def count_visible_users(self, venue_id: str, viewer_user_id: str | None, now: datetime) -> int:
         """Count users visible to the viewer at the venue at the given instant."""
-        blocked_user_ids = select(Block.blocked_user_id).where(
-            Block.blocker_user_id == viewer_user_id
-        )
-        blocked_user_ids = blocked_user_ids.union(
-            select(Block.blocker_user_id).where(Block.blocked_user_id == viewer_user_id)
-        )
+        conditions = [
+            PresenceSession.venue_id == venue_id,
+            PresenceSession.status == PresenceStatus.ACTIVE,
+            PresenceSession.visibility == PresenceVisibility.VISIBLE,
+            PresenceSession.expires_at > now,
+            User.status == UserStatus.ACTIVE,
+            User.deleted_at.is_(None),
+            Profile.visibility_enabled.is_(True),
+        ]
+
+        if viewer_user_id is not None:
+            blocked_user_ids = select(Block.blocked_user_id).where(
+                Block.blocker_user_id == viewer_user_id
+            )
+            blocked_user_ids = blocked_user_ids.union(
+                select(Block.blocker_user_id).where(Block.blocked_user_id == viewer_user_id)
+            )
+            conditions.append(PresenceSession.user_id != viewer_user_id)
+            conditions.append(PresenceSession.user_id.not_in(blocked_user_ids))
 
         verified_user_ids = (
             select(Verification.user_id)
@@ -36,23 +49,13 @@ class PresenceRepository:
             )
             .distinct()
         )
+        conditions.append(PresenceSession.user_id.in_(verified_user_ids))
 
         visible_user_ids = (
             select(PresenceSession.user_id)
             .join(User, User.id == PresenceSession.user_id)
             .join(Profile, Profile.user_id == User.id)
-            .where(
-                PresenceSession.venue_id == venue_id,
-                PresenceSession.status == PresenceStatus.ACTIVE,
-                PresenceSession.visibility == PresenceVisibility.VISIBLE,
-                PresenceSession.expires_at > now,
-                PresenceSession.user_id != viewer_user_id,
-                User.status == UserStatus.ACTIVE,
-                User.deleted_at.is_(None),
-                Profile.visibility_enabled.is_(True),
-                PresenceSession.user_id.not_in(blocked_user_ids),
-                PresenceSession.user_id.in_(verified_user_ids),
-            )
+            .where(*conditions)
             .distinct()
         )
 
