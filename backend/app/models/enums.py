@@ -57,3 +57,9 @@ class VenuePartnerStatus(str, enum.Enum):
     PILOT = "pilot"
     ACTIVE = "active"
     PAUSED = "paused"
+
+
+class TokenStatus(str, enum.Enum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    EXPIRED = "expired"

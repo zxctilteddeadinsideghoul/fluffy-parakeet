@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from hashlib import sha256
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,6 +16,7 @@ import app.models.presence
 import app.models.trust
 import app.models.user
 import app.models.venue
+import app.models.venue_check_in_token
 from app.api.presence import get_db
 from app.main import app
 from app.models.base import Base
@@ -23,6 +25,7 @@ from app.models.enums import (
     CheckInMethod,
     PresenceStatus,
     PresenceVisibility,
+    TokenStatus,
     UserStatus,
     VerificationStatus,
     VerificationType,
@@ -31,6 +34,7 @@ from app.models.presence import PresenceSession
 from app.models.trust import Block
 from app.models.user import Profile, User, Verification
 from app.models.venue import Venue
+from app.models.venue_check_in_token import VenueCheckInToken
 
 
 @pytest.fixture()
@@ -131,3 +135,25 @@ def create_session(
 def block_users(db: Session, blocker_id: str, blocked_id: str) -> None:
     db.add(Block(blocker_user_id=blocker_id, blocked_user_id=blocked_id))
     db.flush()
+
+
+def create_token(
+    db: Session,
+    venue_id: str,
+    *,
+    raw_token: str = "secret-token",
+    status: TokenStatus = TokenStatus.ACTIVE,
+    valid_until: datetime | None = None,
+) -> str:
+    now = utcnow()
+    db.add(
+        VenueCheckInToken(
+            venue_id=venue_id,
+            token_hash=sha256(raw_token.encode()).hexdigest(),
+            valid_from=now - timedelta(hours=1),
+            valid_until=valid_until if valid_until is not None else now + timedelta(hours=1),
+            status=status,
+        )
+    )
+    db.flush()
+    return raw_token
