@@ -34,6 +34,17 @@ This is a full-stack monorepo. Create new files in this structure from the start
 
 Agents must preserve this separation. Never place React or Python source in the root. Create directories when they gain a concrete responsibility; avoid empty placeholders.
 
+## Mandatory Data and Domain Contracts
+
+Before planning, implementing, or reviewing any product change, agents MUST read and follow both contract documents in full:
+
+- `docs\CONTRACTS_DATA.md`
+- `docs\DOMAIN_ENTITIES.md`
+
+Treat these files as the source of truth for stored models, API DTOs, commands, events, invariants, state transitions, aggregate boundaries, privacy rules, and frontend types. Code, database schemas, tests, and documentation MUST remain consistent with both documents. Do not silently resolve `TBD` items, invent missing fields or transitions, or merge independently modeled user consents.
+
+If either file is missing, inaccessible, truncated, contradictory, or does not provide enough context for the requested change, the agent MUST explicitly identify the missing or ambiguous contract information and stop work. Do not infer a contract or implement a provisional interpretation; resume only after the contracts or requirements are clarified.
+
 ## Build, Test, and Development Commands
 
 Docker Compose is the canonical interface. Keep these root commands working:
