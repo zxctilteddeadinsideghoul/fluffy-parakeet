@@ -9,7 +9,9 @@ from __future__ import annotations
 
 
 class EventPublisher:
-    def publish(self, event_type: str, entity_id: str, actor_user_id: str | None = None) -> None:
+    async def publish(
+        self, event_type: str, entity_id: str, actor_user_id: str | None = None
+    ) -> None:
         pass
 
 

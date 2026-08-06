@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     app_name: str = "fluffy-parakeet"
     environment: str = "development"
-    database_url: str = "sqlite:///./app.db"
+    database_url: str = "sqlite+aiosqlite:///./app.db"
     presence_ttl_hours: int = 4
 
 

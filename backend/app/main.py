@@ -1,12 +1,22 @@
 from fastapi import FastAPI
 
-from app.api.presence import router as presence_router
+from app.containers.container import Container
 from app.core.config import settings
+from app.routes import dependencies as route_dependencies
+from app.routes.health import router as health_router
+from app.routes.presence import router as presence_router
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(
+    title=settings.app_name,
+    version="0.1.0",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+container = Container()
+container.wire(modules=[route_dependencies])
+app.container = container  # type: ignore[attr-defined]
+
+app.include_router(health_router)
 app.include_router(presence_router)
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}

@@ -1,4 +1,4 @@
-"""Block model (Trust & Safety context)."""
+"""Block ORM model (Trust & Safety context)."""
 
 from __future__ import annotations
 
@@ -8,14 +8,14 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base
+from app.core.db import Base
 
 
 def new_uuid() -> str:
     return str(uuid.uuid4())
 
 
-class Block(Base):
+class BlockOrm(Base):
     __tablename__ = "blocks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

@@ -1,4 +1,4 @@
-"""User, Profile and Verification models (Identity context)."""
+"""User, Profile and Verification ORM models (Identity context)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from datetime import date, datetime
 from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from app.core.db import Base
 from app.models.enums import (
     ApproachMode,
     UserStatus,
@@ -23,7 +23,7 @@ def new_uuid() -> str:
     return str(uuid.uuid4())
 
 
-class User(Base):
+class UserOrm(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -42,10 +42,10 @@ class User(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    profile: Mapped[Profile | None] = relationship(back_populates="user", uselist=False)
+    profile: Mapped[ProfileOrm | None] = relationship(back_populates="user", uselist=False)
 
 
-class Profile(Base):
+class ProfileOrm(Base):
     __tablename__ = "profiles"
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
@@ -67,10 +67,10 @@ class Profile(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    user: Mapped[User] = relationship(back_populates="profile")
+    user: Mapped[UserOrm] = relationship(back_populates="profile")
 
 
-class Verification(Base):
+class VerificationOrm(Base):
     __tablename__ = "verifications"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

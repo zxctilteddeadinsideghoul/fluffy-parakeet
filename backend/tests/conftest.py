@@ -1,15 +1,12 @@
 """Shared test fixtures and factories."""
 
-from __future__ import annotations
-
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from hashlib import sha256
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 import app.models.presence
@@ -17,9 +14,8 @@ import app.models.trust
 import app.models.user
 import app.models.venue
 import app.models.venue_check_in_token
-from app.api.presence import get_db
+from app.core.db import Base, get_db_session
 from app.main import app
-from app.models.base import Base
 from app.models.enums import (
     ApproachMode,
     CheckInMethod,
@@ -30,33 +26,36 @@ from app.models.enums import (
     VerificationStatus,
     VerificationType,
 )
-from app.models.presence import PresenceSession
-from app.models.trust import Block
-from app.models.user import Profile, User, Verification
-from app.models.venue import Venue
-from app.models.venue_check_in_token import VenueCheckInToken
+from app.models.presence import PresenceSessionOrm
+from app.models.trust import BlockOrm
+from app.models.user import ProfileOrm, UserOrm, VerificationOrm
+from app.models.venue import VenueOrm
+from app.models.venue_check_in_token import VenueCheckInTokenOrm
+
+TEST_DATABASE_URL = "sqlite+aiosqlite://"
 
 
 @pytest.fixture()
-def db_session():
-    engine = create_engine(
-        "sqlite://",
+async def db_session():
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
-    with Session() as session:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Session = async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    async with Session() as session:
         yield session
-    Base.metadata.drop_all(engine)
+    await engine.dispose()
 
 
 @pytest.fixture()
-def client(db_session):
-    def override_get_db():
+async def client(db_session):
+    async def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db_session] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
@@ -66,23 +65,23 @@ def utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def create_user(
-    db: Session,
+async def create_user(
+    session,
     *,
     status: UserStatus = UserStatus.ACTIVE,
     verified: bool = True,
     profile_visible: bool = True,
 ) -> str:
-    user = User(
+    user = UserOrm(
         status=status,
         auth_provider="test",
         auth_subject=uuid.uuid4().hex,
         birth_date=date(2000, 1, 1),
     )
-    db.add(user)
-    db.flush()
-    db.add(
-        Profile(
+    session.add(user)
+    await session.flush()
+    session.add(
+        ProfileOrm(
             user_id=user.id,
             display_name=f"user-{user.id[:8]}",
             communication_goals="dating",
@@ -91,27 +90,27 @@ def create_user(
         )
     )
     if verified:
-        db.add(
-            Verification(
+        session.add(
+            VerificationOrm(
                 user_id=user.id,
                 type=VerificationType.PHOTO,
                 status=VerificationStatus.APPROVED,
                 expires_at=utcnow() + timedelta(days=30),
             )
         )
-    db.flush()
+    await session.flush()
     return user.id
 
 
-def create_venue(db: Session) -> str:
-    venue = Venue(name="Bar", address="address", timezone="UTC")
-    db.add(venue)
-    db.flush()
+async def create_venue(session) -> str:
+    venue = VenueOrm(name="Bar", address="address", timezone="UTC")
+    session.add(venue)
+    await session.flush()
     return venue.id
 
 
-def create_session(
-    db: Session,
+async def create_session(
+    session,
     user_id: str,
     venue_id: str,
     *,
@@ -119,7 +118,7 @@ def create_session(
     visibility: PresenceVisibility = PresenceVisibility.VISIBLE,
     expires_in: timedelta = timedelta(hours=2),
 ) -> str:
-    session = PresenceSession(
+    presence = PresenceSessionOrm(
         user_id=user_id,
         venue_id=venue_id,
         status=status,
@@ -127,18 +126,18 @@ def create_session(
         check_in_method=CheckInMethod.VENUE_QR,
         expires_at=utcnow() + expires_in,
     )
-    db.add(session)
-    db.flush()
-    return session.id
+    session.add(presence)
+    await session.flush()
+    return presence.id
 
 
-def block_users(db: Session, blocker_id: str, blocked_id: str) -> None:
-    db.add(Block(blocker_user_id=blocker_id, blocked_user_id=blocked_id))
-    db.flush()
+async def block_users(session, blocker_id: str, blocked_id: str) -> None:
+    session.add(BlockOrm(blocker_user_id=blocker_id, blocked_user_id=blocked_id))
+    await session.flush()
 
 
-def create_token(
-    db: Session,
+async def create_token(
+    session,
     venue_id: str,
     *,
     raw_token: str = "secret-token",
@@ -146,8 +145,8 @@ def create_token(
     valid_until: datetime | None = None,
 ) -> str:
     now = utcnow()
-    db.add(
-        VenueCheckInToken(
+    session.add(
+        VenueCheckInTokenOrm(
             venue_id=venue_id,
             token_hash=sha256(raw_token.encode()).hexdigest(),
             valid_from=now - timedelta(hours=1),
@@ -155,5 +154,5 @@ def create_token(
             status=status,
         )
     )
-    db.flush()
+    await session.flush()
     return raw_token
