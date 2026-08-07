@@ -38,8 +38,8 @@ Agents must preserve this separation. Never place React or Python source in the 
 
 Before planning, implementing, or reviewing any product change, agents MUST read and follow both contract documents in full:
 
-- `C:\prjs\startup\AGENTS_DATA_CONTRACTS.md`
-- `C:\prjs\startup\AGENTS_DOMAIN_ENTITIES.md`
+- `docs\CONTRACTS_DATA.md`
+- `docs\DOMAIN_ENTITIES.md`
 
 Treat these files as the source of truth for stored models, API DTOs, commands, events, invariants, state transitions, aggregate boundaries, privacy rules, and frontend types. Code, database schemas, tests, and documentation MUST remain consistent with both documents. Do not silently resolve `TBD` items, invent missing fields or transitions, or merge independently modeled user consents.
 
