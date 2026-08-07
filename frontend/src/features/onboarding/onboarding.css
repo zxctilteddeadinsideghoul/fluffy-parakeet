@@ -1,0 +1,161 @@
+.profile-setup {
+  padding: 18px 28px 36px;
+}
+
+.profile-setup__heading h1,
+.onboarding-complete h1,
+.protected-placeholder h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.profile-setup__heading h1 {
+  font-size: 32px;
+}
+
+.profile-setup__heading p {
+  margin: 7px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.profile-setup form {
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-setup__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.textarea-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.textarea-field small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.textarea-field textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 13px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 18px;
+  outline: 0;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.textarea-field textarea:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 10%, transparent);
+}
+
+.textarea-field textarea::placeholder {
+  color: var(--color-placeholder);
+}
+
+.onboarding-complete {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 28px 42px;
+}
+
+.onboarding-complete__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  padding: 30px 6px;
+  text-align: center;
+}
+
+.onboarding-complete h1 {
+  font-size: 34px;
+}
+
+.onboarding-complete p {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.onboarding-complete__action {
+  flex: none;
+}
+
+.protected-placeholder {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 34px 28px 42px;
+}
+
+.protected-placeholder__content {
+  margin: auto 0;
+  padding: 40px 0;
+}
+
+.protected-placeholder__eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.protected-placeholder h1 {
+  font-size: 34px;
+}
+
+.protected-placeholder p {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+@media (max-height: 760px) {
+  .profile-setup {
+    padding-top: 10px;
+  }
+
+  .profile-setup form {
+    padding-top: 14px;
+    gap: 15px;
+  }
+
+  .profile-setup .photo-picker > label {
+    width: 100px;
+    height: 100px;
+    border-radius: 27px;
+  }
+}
