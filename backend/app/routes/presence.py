@@ -1,6 +1,6 @@
 """HTTP routes for the Presence context (thin: only HTTP concerns)."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.models.presence import PresenceSessionOrm
 from app.routes.dependencies import (
@@ -8,7 +8,10 @@ from app.routes.dependencies import (
     get_check_out_use_case,
     get_count_present_users_use_case,
     get_current_user_id,
+    get_list_present_profiles_use_case,
+    get_present_profile_use_case,
 )
+from app.schemas.discovery import PageDto, VisibleProfileDto
 from app.schemas.presence import (
     CheckInRequest,
     PresenceSessionResponse,
@@ -30,6 +33,18 @@ from app.use_cases.count_present_users import (
 )
 from app.use_cases.count_present_users import (
     VenueNotFoundError as CountVenueNotFoundError,
+)
+from app.use_cases.get_present_profile import (
+    GetPresentProfileUseCase,
+    ProfileNotFoundError,
+)
+from app.use_cases.list_present_profiles import (
+    InvalidCursorError,
+    ListPresentProfilesUseCase,
+    ViewerNotPresentError,
+)
+from app.use_cases.list_present_profiles import (
+    VenueNotFoundError as ListVenueNotFoundError,
 )
 
 router = APIRouter(tags=["presence"])
@@ -74,3 +89,47 @@ async def get_venue_presence_count(
     except CountVenueNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "NOT_FOUND") from None
     return VenuePresenceCountResponse(venue_id=venue_id, count=count)
+
+
+@router.get("/venues/{venue_id}/profiles", response_model=PageDto)
+async def list_present_profiles(
+    venue_id: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    use_case: ListPresentProfilesUseCase = Depends(get_list_present_profiles_use_case),
+    user_id: str = Depends(get_current_user_id),
+) -> PageDto:
+    try:
+        items, next_cursor = await use_case.execute(
+            venue_id=venue_id,
+            viewer_user_id=user_id,
+            limit=limit,
+            cursor=cursor,
+        )
+    except ViewerNotPresentError:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "ACTIVE_PRESENCE_REQUIRED"
+        ) from None
+    except InvalidCursorError:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "INVALID_CURSOR"
+        ) from None
+    except ListVenueNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "NOT_FOUND") from None
+    return PageDto(items=items, nextCursor=next_cursor)
+
+
+@router.get("/presence/{presence_id}/profile", response_model=VisibleProfileDto)
+async def get_present_user_profile(
+    presence_id: str,
+    use_case: GetPresentProfileUseCase = Depends(get_present_profile_use_case),
+    user_id: str = Depends(get_current_user_id),
+) -> VisibleProfileDto:
+    try:
+        return await use_case.execute(presence_id=presence_id, viewer_user_id=user_id)
+    except ProfileNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "NOT_FOUND") from None
+    except ViewerNotPresentError:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "ACTIVE_PRESENCE_REQUIRED"
+        ) from None
