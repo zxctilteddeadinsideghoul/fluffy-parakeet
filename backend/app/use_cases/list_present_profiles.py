@@ -2,12 +2,15 @@
 
 import base64
 import json
+import logging
 from datetime import UTC, datetime
 
 from app.models.enums import CommunicationGoal
 from app.repositories.presence import PresenceRepository
 from app.schemas.discovery import ProfilePhotoDto, VisibleProfileDto
 from app.services.policy import available_actions
+
+logger = logging.getLogger(__name__)
 
 
 class VenueNotFoundError(Exception):
@@ -90,6 +93,13 @@ class ListPresentProfilesUseCase:
             raise ViewerNotPresentError()
 
         after = decode_cursor(cursor) if cursor is not None else None
+        logger.info(
+            "list present profiles: venue=%s viewer=%s limit=%d after=%s",
+            venue_id,
+            viewer_user_id,
+            limit,
+            cursor if cursor is not None else "-",
+        )
         now = datetime.now(UTC).replace(tzinfo=None)
         present_profiles, has_more = await self._repository.list_visible_profiles(
             venue_id,
@@ -103,4 +113,10 @@ class ListPresentProfilesUseCase:
         if has_more and present_profiles:
             last = present_profiles[-1]
             next_cursor = encode_cursor(last.session.checked_in_at, last.session.id)
+        logger.info(
+            "list present profiles: venue=%s returned=%d has_more=%s",
+            venue_id,
+            len(items),
+            has_more,
+        )
         return items, next_cursor

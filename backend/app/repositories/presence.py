@@ -1,5 +1,6 @@
 """Repository for the Presence context: pure data access, no business rules."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -19,6 +20,8 @@ from app.models.trust import BlockOrm
 from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 from app.models.venue import VenueOrm
 from app.models.venue_check_in_token import VenueCheckInTokenOrm
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -202,6 +205,13 @@ class PresenceRepository:
         user_ids = [row[1].id for row in rows]
         photos = await self._approved_photos(user_ids)
         verified = await self._user_ids_with_valid_verification(user_ids, now)
+        logger.debug(
+            "list_visible_profiles: venue=%s rows=%d has_more=%s users=%s",
+            venue_id,
+            len(rows),
+            has_more,
+            user_ids,
+        )
         present = []
         for session, user, profile in rows:
             present.append(
@@ -240,6 +250,12 @@ class PresenceRepository:
             return None
 
         session, user, profile = row
+        logger.debug(
+            "get_present_profile: venue=%s presence=%s -> user=%s",
+            venue_id,
+            presence_id,
+            user.id,
+        )
         photos = await self._approved_photos([user.id])
         verified = user.id in await self._user_ids_with_valid_verification(
             [user.id], now

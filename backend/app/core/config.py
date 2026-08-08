@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "sqlite+aiosqlite:///./app.db"
     presence_ttl_hours: int = 4
+    log_level: str = "INFO"
 
 
 settings = Settings()
