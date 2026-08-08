@@ -24,7 +24,7 @@ async def test_list_profiles_returns_page(client, db_session):
     response = client.get(f"/venues/{venue_id}/profiles", headers=headers(viewer_id))
 
     assert response.status_code == 200
-    body = response.json()
+    body = response.json()["data"]
     assert body["nextCursor"] is None
     assert len(body["items"]) == 1
     item = body["items"][0]
@@ -65,7 +65,7 @@ async def test_get_profile_returns_full_profile(client, db_session):
     )
 
     assert response.status_code == 200
-    body = response.json()
+    body = response.json()["data"]
     assert body["presenceId"] == presence_id
     assert body["userId"] == other_id
     assert body["bio"] == "Hi there!"

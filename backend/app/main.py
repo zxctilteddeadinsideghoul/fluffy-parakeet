@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api.middleware import RequestTracingMiddleware
 from app.containers.container import Container
 from app.core.config import settings
+from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.routes import dependencies as route_dependencies
 from app.routes.health import router as health_router
@@ -18,6 +19,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 app.add_middleware(RequestTracingMiddleware)
+register_error_handlers(app)
 
 container = Container()
 container.wire(modules=[route_dependencies])
