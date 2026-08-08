@@ -23,10 +23,24 @@ class VerificationStatus(str, enum.Enum):
     EXPIRED = "expired"
 
 
+class MediaModerationStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class ApproachMode(str, enum.Enum):
     CHAT_ONLY = "chat_only"
     ASK_BEFORE_APPROACH = "ask_before_approach"
     MAY_APPROACH = "may_approach"
+
+
+class CommunicationGoal(str, enum.Enum):
+    DATING = "dating"
+    FRIENDS = "friends"
+    COMPANY_TONIGHT = "company_tonight"
+    NETWORKING = "networking"
+    CASUAL_CHAT = "casual_chat"
 
 
 class PresenceStatus(str, enum.Enum):
