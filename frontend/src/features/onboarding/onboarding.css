@@ -54,7 +54,7 @@
 .textarea-field textarea {
   width: 100%;
   min-height: 80px;
-  resize: vertical;
+  resize: none;
   padding: 13px 16px;
   border: 1.5px solid var(--color-border);
   border-radius: 18px;

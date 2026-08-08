@@ -10,7 +10,7 @@ export type RegistrationDraft = Credentials & {
 export type ProfileDraft = {
   displayName: string
   birthDate: string
-  gender?: string
+  gender: string
   bio?: string
   photo?: File
 }

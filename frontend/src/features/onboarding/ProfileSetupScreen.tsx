@@ -18,7 +18,11 @@ export function ProfileSetupScreen({ onSuccess }: ProfileSetupScreenProps) {
   const [gender, setGender] = useState<GenderOption>('')
   const [bio, setBio] = useState('')
   const [photo, setPhoto] = useState<File>()
-  const [errors, setErrors] = useState<{ displayName?: string; birthDate?: string }>({})
+  const [errors, setErrors] = useState<{
+    displayName?: string
+    birthDate?: string
+    gender?: string
+  }>({})
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -30,14 +34,15 @@ export function ProfileSetupScreen({ onSuccess }: ProfileSetupScreenProps) {
         : birthDate >= today
           ? 'Дата должна быть в прошлом'
           : undefined,
+      gender: gender ? undefined : 'Укажите пол',
     }
     setErrors(nextErrors)
-    if (nextErrors.displayName || nextErrors.birthDate) return
+    if (nextErrors.displayName || nextErrors.birthDate || nextErrors.gender || !gender) return
 
     onSuccess({
       displayName: displayName.trim(),
       birthDate,
-      gender: gender || undefined,
+      gender,
       bio: bio.trim() || undefined,
       photo,
     })
@@ -68,7 +73,7 @@ export function ProfileSetupScreen({ onSuccess }: ProfileSetupScreenProps) {
             error={errors.birthDate}
             onChange={(event) => setBirthDate(event.target.value)}
           />
-          <GenderSelect value={gender} onChange={setGender} />
+          <GenderSelect value={gender} error={errors.gender} onChange={setGender} />
           <label className="textarea-field">
             <span>
               О себе <small>по желанию</small>

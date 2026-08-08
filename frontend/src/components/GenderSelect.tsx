@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import './components.css'
 
 export type GenderOption = '' | 'female' | 'male'
@@ -5,6 +6,7 @@ export type GenderOption = '' | 'female' | 'male'
 type GenderSelectProps = {
   value: GenderOption
   onChange: (value: GenderOption) => void
+  error?: string
 }
 
 const options: Array<{ value: Exclude<GenderOption, ''>; label: string }> = [
@@ -12,9 +14,15 @@ const options: Array<{ value: Exclude<GenderOption, ''>; label: string }> = [
   { value: 'male', label: 'Мужской' },
 ]
 
-export function GenderSelect({ onChange, value }: GenderSelectProps) {
+export function GenderSelect({ error, onChange, value }: GenderSelectProps) {
+  const errorId = useId()
+
   return (
-    <fieldset className="gender-select">
+    <fieldset
+      className={`gender-select ${error ? 'gender-select--error' : ''}`}
+      aria-describedby={error ? errorId : undefined}
+      aria-invalid={Boolean(error)}
+    >
       <legend>Пол</legend>
       <div className="gender-select__options">
         {options.map((option) => (
@@ -24,12 +32,18 @@ export function GenderSelect({ onChange, value }: GenderSelectProps) {
               name="gender"
               value={option.value}
               checked={value === option.value}
+              required
               onChange={() => onChange(option.value)}
             />
             <span>{option.label}</span>
           </label>
         ))}
       </div>
+      {error && (
+        <span className="gender-select__message" id={errorId}>
+          {error}
+        </span>
+      )}
     </fieldset>
   )
 }
