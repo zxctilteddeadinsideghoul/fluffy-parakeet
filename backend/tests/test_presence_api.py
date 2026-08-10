@@ -11,7 +11,7 @@ async def test_count_endpoint_returns_camel_case_json(client, db_session):
     response = client.get(f"/venues/{venue_id}/presence/count")
 
     assert response.status_code == 200
-    assert response.json() == {"venueId": venue_id, "count": 2}
+    assert response.json() == {"data": {"venueId": venue_id, "count": 2}}
 
 
 async def test_count_endpoint_returns_zero_for_empty_venue(client, db_session):
@@ -20,7 +20,7 @@ async def test_count_endpoint_returns_zero_for_empty_venue(client, db_session):
     response = client.get(f"/venues/{venue_id}/presence/count")
 
     assert response.status_code == 200
-    assert response.json() == {"venueId": venue_id, "count": 0}
+    assert response.json() == {"data": {"venueId": venue_id, "count": 0}}
 
 
 async def test_count_endpoint_returns_404_for_unknown_venue(client):
