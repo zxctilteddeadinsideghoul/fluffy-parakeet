@@ -1,8 +1,11 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.api.middleware import RequestTracingMiddleware
 from app.containers.container import Container
 from app.core.config import settings
+from app.core.db import Base, engine
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.routes import dependencies as route_dependencies
@@ -13,12 +16,21 @@ from app.routes.profile import router as profile_router
 
 configure_logging(settings.log_level)
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     openapi_url="/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 app.add_middleware(RequestTracingMiddleware)
 register_error_handlers(app)
