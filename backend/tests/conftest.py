@@ -1,10 +1,13 @@
 """Shared test fixtures and factories."""
 
+import tempfile
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from hashlib import sha256
+from pathlib import Path
 
 import pytest
+from dependency_injector import providers
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -34,6 +37,7 @@ from app.models.trust import BlockOrm
 from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 from app.models.venue import VenueOrm
 from app.models.venue_check_in_token import VenueCheckInTokenOrm
+from app.storage.local import LocalPhotoStorage
 
 TEST_DATABASE_URL = "sqlite+aiosqlite://"
 
@@ -58,10 +62,15 @@ async def client(db_session):
     async def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db_session] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
+    with tempfile.TemporaryDirectory() as media_dir:
+        app.container.photo_storage.override(  # type: ignore[attr-defined]
+            providers.Object(LocalPhotoStorage(Path(media_dir)))
+        )
+        app.dependency_overrides[get_db_session] = override_get_db
+        with TestClient(app) as test_client:
+            yield test_client
+        app.dependency_overrides.clear()
+        app.container.photo_storage.reset_override()  # type: ignore[attr-defined]
 
 
 def utcnow() -> datetime:

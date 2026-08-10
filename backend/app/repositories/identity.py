@@ -1,11 +1,16 @@
 """Repository for the Identity context: User, Profile and ProfilePhoto data access."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import ApproachMode, VerificationStatus
+from app.models.enums import (
+    ApproachMode,
+    MediaModerationStatus,
+    VerificationStatus,
+    VerificationType,
+)
 from app.models.profile_photo import ProfilePhotoOrm
 from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 
@@ -62,6 +67,51 @@ class IdentityRepository:
             .order_by(ProfilePhotoOrm.position.asc())
         )
         return list((await self._session.execute(stmt)).scalars().all())
+
+    async def get_photo(self, photo_id: str) -> ProfilePhotoOrm | None:
+        return await self._session.get(ProfilePhotoOrm, photo_id)
+
+    async def max_photo_position(self, user_id: str) -> int:
+        stmt = (
+            select(func.coalesce(func.max(ProfilePhotoOrm.position), 0))
+            .where(
+                ProfilePhotoOrm.user_id == user_id,
+                ProfilePhotoOrm.deleted_at.is_(None),
+            )
+        )
+        return (await self._session.execute(stmt)).scalar_one()
+
+    async def add_photo(
+        self,
+        *,
+        user_id: str,
+        storage_key: str,
+        public_url: str | None,
+        position: int,
+        moderation_status: MediaModerationStatus,
+    ) -> ProfilePhotoOrm:
+        photo = ProfilePhotoOrm(
+            user_id=user_id,
+            storage_key=storage_key,
+            public_url=public_url,
+            position=position,
+            moderation_status=moderation_status,
+        )
+        self._session.add(photo)
+        await self._session.flush()
+        return photo
+
+    async def add_photo_verification(self, user_id: str, now: datetime) -> None:
+        self._session.add(
+            VerificationOrm(
+                user_id=user_id,
+                type=VerificationType.PHOTO,
+                status=VerificationStatus.APPROVED,
+                verified_at=now,
+                expires_at=now + timedelta(days=30),
+            )
+        )
+        await self._session.flush()
 
     async def is_verified_user(self, user_id: str, now: datetime) -> bool:
         stmt = (
