@@ -17,12 +17,13 @@ async def test_register_creates_user_with_hidden_profile(db_session):
     use_case = make_use_case(db_session)
     repo = IdentityRepository(db_session)
 
-    user = await use_case.execute(provider="yandex", subject="ya-123")
+    result = await use_case.execute(provider="yandex", subject="ya-123")
 
-    assert user.id
-    assert user.auth_provider == "yandex"
-    assert user.auth_subject == "ya-123"
-    profile = await repo.get_profile(user.id)
+    assert result.is_new_user is True
+    assert result.user.id
+    assert result.user.auth_provider == "yandex"
+    assert result.user.auth_subject == "ya-123"
+    profile = await repo.get_profile(result.user.id)
     assert profile is not None
     assert profile.visibility_enabled is False
 
@@ -33,17 +34,18 @@ async def test_sign_in_returns_existing_user(db_session):
 
     second = await use_case.execute(provider="vk", subject="vk-1")
 
-    assert second.id == first.id
+    assert second.is_new_user is False
+    assert second.user.id == first.user.id
 
 
 async def test_register_email_saves_normalized_email(db_session):
     use_case = make_use_case(db_session)
 
-    user = await use_case.execute(
+    result = await use_case.execute(
         provider="email", subject="ME@Example.com", email="ME@Example.com"
     )
 
-    assert user.email_normalized == "me@example.com"
+    assert result.user.email_normalized == "me@example.com"
 
 
 async def test_empty_subject_is_rejected(db_session):

@@ -14,6 +14,7 @@ from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
+from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
 
 
 def get_current_user_id(
@@ -73,3 +74,10 @@ def get_present_profile_use_case(
     container: Container = Depends(get_container),
 ) -> GetPresentProfileUseCase:
     return _build_with_session(container, container.get_present_profile_use_case, session)
+
+
+def get_sign_in_or_register_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> SignInOrRegisterUseCase:
+    return _build_with_session(container, container.sign_in_or_register_use_case, session)
