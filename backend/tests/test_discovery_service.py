@@ -71,6 +71,19 @@ async def test_list_returns_visible_profiles(db_session):
     assert "contact" in profile.availableActions
 
 
+async def test_list_returns_null_age_when_birth_date_missing(db_session):
+    venue_id = await create_venue(db_session)
+    viewer_id = await create_user(db_session)
+    await create_session(db_session, viewer_id, venue_id)
+    other_id = await create_user(db_session, birth_date=None)
+    await create_session(db_session, other_id, venue_id)
+
+    items, _ = await list_profiles(db_session, venue_id, viewer_id)
+
+    assert len(items) == 1
+    assert items[0].age is None
+
+
 async def test_list_excludes_hidden_expired_and_ended_sessions(db_session):
     venue_id = await create_venue(db_session)
     viewer_id = await create_user(db_session)
