@@ -8,5 +8,8 @@ services:
     environment:
       BACKEND_ENVIRONMENT: development
       BACKEND_DATABASE_URL: sqlite+aiosqlite:////app/data/app.db
+      BACKEND_MEDIA_ROOT: /app/media
+      BACKEND_MEDIA_BASE_URL: http://localhost:8000
     volumes:
       - ./backend/data:/app/data
+      - ./backend/media:/app/media

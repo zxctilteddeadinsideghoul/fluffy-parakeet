@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./app.db"
     presence_ttl_hours: int = 4
     log_level: str = "INFO"
+    media_root: str = "./media"
+    media_base_url: str = "http://localhost:8000"
+    max_photo_upload_bytes: int = 10 * 1024 * 1024
 
 
 settings = Settings()

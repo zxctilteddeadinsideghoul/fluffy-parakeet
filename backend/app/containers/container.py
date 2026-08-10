@@ -7,14 +7,17 @@ from app.core.config import settings
 from app.repositories.identity import IdentityRepository
 from app.repositories.presence import PresenceRepository
 from app.services.events import EventPublisher
+from app.storage.local import LocalPhotoStorage
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
+from app.use_cases.delete_profile_photo import DeleteProfilePhotoUseCase
 from app.use_cases.get_my_profile import GetMyProfileUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
 from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
 from app.use_cases.update_my_profile import UpdateMyProfileUseCase
+from app.use_cases.upload_profile_photo import UploadProfilePhotoUseCase
 
 
 class Container(containers.DeclarativeContainer):
@@ -34,6 +37,22 @@ class Container(containers.DeclarativeContainer):
     identity_repository = providers.Factory(
         IdentityRepository,
         session=db_session,
+    )
+
+    photo_storage = providers.Singleton(LocalPhotoStorage)
+
+    upload_profile_photo_use_case = providers.Factory(
+        UploadProfilePhotoUseCase,
+        repository=identity_repository,
+        storage=photo_storage,
+        media_base_url=settings.media_base_url,
+        max_upload_bytes=settings.max_photo_upload_bytes,
+        auto_approve=settings.environment == "development",
+    )
+
+    delete_profile_photo_use_case = providers.Factory(
+        DeleteProfilePhotoUseCase,
+        repository=identity_repository,
     )
 
     sign_in_or_register_use_case = providers.Factory(

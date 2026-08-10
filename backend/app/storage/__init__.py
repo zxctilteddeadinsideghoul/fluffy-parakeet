@@ -1,0 +1,1 @@
+"""Photo storage package: local file-system implementation holds the uploads."""
