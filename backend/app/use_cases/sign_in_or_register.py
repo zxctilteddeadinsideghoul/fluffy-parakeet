@@ -1,6 +1,7 @@
 """Use case: sign in or register via a verified auth provider."""
 
 import logging
+from dataclasses import dataclass
 
 from app.models.user import UserOrm
 from app.repositories.identity import IdentityRepository
@@ -10,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 class InvalidAuthSubjectError(Exception):
     """Raised when the auth subject is empty or malformed."""
+
+
+@dataclass
+class SignInResult:
+    user: UserOrm
+    is_new_user: bool
 
 
 class SignInOrRegisterUseCase:
@@ -24,7 +31,7 @@ class SignInOrRegisterUseCase:
         provider: str,
         subject: str,
         email: str | None = None,
-    ) -> UserOrm:
+    ) -> SignInResult:
         subject = subject.strip()
         if not subject:
             raise InvalidAuthSubjectError()
@@ -33,7 +40,7 @@ class SignInOrRegisterUseCase:
         user = await self._identity.find_by_auth_identity(provider, subject)
         if user is not None:
             logger.info("sign in: provider=%s subject=%s -> user=%s", provider, subject, user.id)
-            return user
+            return SignInResult(user=user, is_new_user=False)
 
         user = await self._identity.create_user_with_profile(
             provider=provider,
@@ -43,4 +50,4 @@ class SignInOrRegisterUseCase:
         logger.info(
             "register: provider=%s subject=%s -> user=%s", provider, subject, user.id
         )
-        return user
+        return SignInResult(user=user, is_new_user=True)

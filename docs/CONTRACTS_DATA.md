@@ -510,6 +510,11 @@ type DomainEvent<T = Record<string, unknown>> = {
 Хранимые модели MUST NOT отдаваться клиенту напрямую. Все успешные ответы возвращаются внутри конверта `{"data": <DTO>}` (раздел 2); схемы ниже описывают значение поля `data`.
 
 ```ts
+type AuthResponseDto = {
+  userId: UUID;
+  isNewUser: boolean;                // true — аккаунт создан только что
+};
+
 type MyProfileDto = {
   id: UUID;
   displayName: string;

@@ -4,6 +4,7 @@ from dependency_injector import containers, providers  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.repositories.identity import IdentityRepository
 from app.repositories.presence import PresenceRepository
 from app.services.events import EventPublisher
 from app.use_cases.check_in import CheckInUseCase
@@ -11,6 +12,7 @@ from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
+from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
 
 
 class Container(containers.DeclarativeContainer):
@@ -25,6 +27,16 @@ class Container(containers.DeclarativeContainer):
     presence_repository = providers.Factory(
         PresenceRepository,
         session=db_session,
+    )
+
+    identity_repository = providers.Factory(
+        IdentityRepository,
+        session=db_session,
+    )
+
+    sign_in_or_register_use_case = providers.Factory(
+        SignInOrRegisterUseCase,
+        identity_repository=identity_repository,
     )
 
     event_publisher = providers.Singleton(EventPublisher)
