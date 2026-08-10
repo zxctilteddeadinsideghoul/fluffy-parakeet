@@ -10,9 +10,11 @@ from app.services.events import EventPublisher
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
+from app.use_cases.get_my_profile import GetMyProfileUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
 from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
+from app.use_cases.update_my_profile import UpdateMyProfileUseCase
 
 
 class Container(containers.DeclarativeContainer):
@@ -69,4 +71,14 @@ class Container(containers.DeclarativeContainer):
     get_present_profile_use_case = providers.Factory(
         GetPresentProfileUseCase,
         repository=presence_repository,
+    )
+
+    get_my_profile_use_case = providers.Factory(
+        GetMyProfileUseCase,
+        repository=identity_repository,
+    )
+
+    update_my_profile_use_case = providers.Factory(
+        UpdateMyProfileUseCase,
+        repository=identity_repository,
     )
