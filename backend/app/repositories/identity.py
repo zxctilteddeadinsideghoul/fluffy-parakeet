@@ -1,10 +1,13 @@
-"""Repository for the Identity context: User and Profile data access."""
+"""Repository for the Identity context: User, Profile and ProfilePhoto data access."""
 
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import ApproachMode
-from app.models.user import ProfileOrm, UserOrm
+from app.models.enums import ApproachMode, VerificationStatus
+from app.models.profile_photo import ProfilePhotoOrm
+from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 
 
 class IdentityRepository:
@@ -48,6 +51,32 @@ class IdentityRepository:
     async def get_profile(self, user_id: str) -> ProfileOrm | None:
         stmt = select(ProfileOrm).where(ProfileOrm.user_id == user_id)
         return (await self._session.execute(stmt)).scalar_one_or_none()
+
+    async def list_photos(self, user_id: str) -> list[ProfilePhotoOrm]:
+        stmt = (
+            select(ProfilePhotoOrm)
+            .where(
+                ProfilePhotoOrm.user_id == user_id,
+                ProfilePhotoOrm.deleted_at.is_(None),
+            )
+            .order_by(ProfilePhotoOrm.position.asc())
+        )
+        return list((await self._session.execute(stmt)).scalars().all())
+
+    async def is_verified_user(self, user_id: str, now: datetime) -> bool:
+        stmt = (
+            select(VerificationOrm.user_id)
+            .where(
+                VerificationOrm.user_id == user_id,
+                VerificationOrm.status == VerificationStatus.APPROVED,
+                or_(
+                    VerificationOrm.expires_at.is_(None),
+                    VerificationOrm.expires_at > now,
+                ),
+            )
+            .limit(1)
+        )
+        return (await self._session.execute(stmt)).scalar_one_or_none() is not None
 
     async def update(self, entity: UserOrm | ProfileOrm) -> None:
         self._session.add(entity)

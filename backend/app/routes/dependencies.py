@@ -12,9 +12,11 @@ from app.core.db import get_db_session
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
+from app.use_cases.get_my_profile import GetMyProfileUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
 from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
+from app.use_cases.update_my_profile import UpdateMyProfileUseCase
 
 
 def get_current_user_id(
@@ -81,3 +83,17 @@ def get_sign_in_or_register_use_case(
     container: Container = Depends(get_container),
 ) -> SignInOrRegisterUseCase:
     return _build_with_session(container, container.sign_in_or_register_use_case, session)
+
+
+def get_get_my_profile_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> GetMyProfileUseCase:
+    return _build_with_session(container, container.get_my_profile_use_case, session)
+
+
+def get_update_my_profile_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> UpdateMyProfileUseCase:
+    return _build_with_session(container, container.update_my_profile_use_case, session)
