@@ -33,7 +33,7 @@ async def test_check_in_returns_created_session(client, db_session):
     )
 
     assert response.status_code == 201
-    body = response.json()
+    body = response.json()["data"]
     assert body["venueId"] == venue_id
     assert body["status"] == "active"
     assert body["visibility"] == "visible"
@@ -112,8 +112,8 @@ async def test_check_in_and_check_out_affect_venue_count(client, db_session):
     client.post("/presence/check-out", headers=headers(user_id))
     after_check_out = client.get(f"/venues/{venue_id}/presence/count")
 
-    assert after_check_in.json()["count"] == 1
-    assert after_check_out.json()["count"] == 0
+    assert after_check_in.json()["data"]["count"] == 1
+    assert after_check_out.json()["data"]["count"] == 0
 
 
 def test_check_out_requires_auth(client):
@@ -135,7 +135,7 @@ async def test_check_out_ends_session(client, db_session):
     response = client.post("/presence/check-out", headers=headers(user_id))
 
     assert response.status_code == 200
-    assert response.json()["status"] == "ended"
+    assert response.json()["data"]["status"] == "ended"
 
 
 async def test_check_out_without_session_returns_404(client, db_session):

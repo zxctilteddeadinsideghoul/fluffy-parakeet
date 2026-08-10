@@ -9,6 +9,8 @@ from app.services.events import EventPublisher
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
+from app.use_cases.get_present_profile import GetPresentProfileUseCase
+from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
 
 
 class Container(containers.DeclarativeContainer):
@@ -44,5 +46,15 @@ class Container(containers.DeclarativeContainer):
 
     count_present_users_use_case = providers.Factory(
         CountPresentUsersUseCase,
+        repository=presence_repository,
+    )
+
+    list_present_profiles_use_case = providers.Factory(
+        ListPresentProfilesUseCase,
+        repository=presence_repository,
+    )
+
+    get_present_profile_use_case = providers.Factory(
+        GetPresentProfileUseCase,
         repository=presence_repository,
     )

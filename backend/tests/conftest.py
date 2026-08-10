@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 import app.models.presence
+import app.models.profile_photo
 import app.models.trust
 import app.models.user
 import app.models.venue
@@ -19,6 +20,7 @@ from app.main import app
 from app.models.enums import (
     ApproachMode,
     CheckInMethod,
+    MediaModerationStatus,
     PresenceStatus,
     PresenceVisibility,
     TokenStatus,
@@ -27,6 +29,7 @@ from app.models.enums import (
     VerificationType,
 )
 from app.models.presence import PresenceSessionOrm
+from app.models.profile_photo import ProfilePhotoOrm
 from app.models.trust import BlockOrm
 from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 from app.models.venue import VenueOrm
@@ -71,6 +74,8 @@ async def create_user(
     status: UserStatus = UserStatus.ACTIVE,
     verified: bool = True,
     profile_visible: bool = True,
+    display_name: str | None = None,
+    bio: str | None = None,
 ) -> str:
     user = UserOrm(
         status=status,
@@ -83,7 +88,8 @@ async def create_user(
     session.add(
         ProfileOrm(
             user_id=user.id,
-            display_name=f"user-{user.id[:8]}",
+            display_name=display_name or f"user-{user.id[:8]}",
+            bio=bio,
             communication_goals="dating",
             default_approach_mode=ApproachMode.ASK_BEFORE_APPROACH,
             visibility_enabled=profile_visible,
@@ -116,6 +122,7 @@ async def create_session(
     *,
     status: PresenceStatus = PresenceStatus.ACTIVE,
     visibility: PresenceVisibility = PresenceVisibility.VISIBLE,
+    approach_mode: ApproachMode = ApproachMode.ASK_BEFORE_APPROACH,
     expires_in: timedelta = timedelta(hours=2),
 ) -> str:
     presence = PresenceSessionOrm(
@@ -123,6 +130,7 @@ async def create_session(
         venue_id=venue_id,
         status=status,
         visibility=visibility,
+        approach_mode=approach_mode,
         check_in_method=CheckInMethod.VENUE_QR,
         expires_at=utcnow() + expires_in,
     )
@@ -156,3 +164,23 @@ async def create_token(
     )
     await session.flush()
     return raw_token
+
+
+async def create_photo(
+    session,
+    user_id: str,
+    *,
+    position: int = 0,
+    url: str = "https://cdn.example.com/photo.jpg",
+    moderation: MediaModerationStatus = MediaModerationStatus.APPROVED,
+) -> str:
+    photo = ProfilePhotoOrm(
+        user_id=user_id,
+        storage_key=f"key-{user_id[:8]}-{position}",
+        public_url=url,
+        position=position,
+        moderation_status=moderation,
+    )
+    session.add(photo)
+    await session.flush()
+    return photo.id
