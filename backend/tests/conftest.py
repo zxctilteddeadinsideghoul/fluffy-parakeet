@@ -76,12 +76,13 @@ async def create_user(
     profile_visible: bool = True,
     display_name: str | None = None,
     bio: str | None = None,
+    birth_date: date | None = date(2000, 1, 1),
 ) -> str:
     user = UserOrm(
         status=status,
         auth_provider="test",
         auth_subject=uuid.uuid4().hex,
-        birth_date=date(2000, 1, 1),
+        birth_date=birth_date,
     )
     session.add(user)
     await session.flush()

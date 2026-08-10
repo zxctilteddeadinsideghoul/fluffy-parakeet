@@ -25,7 +25,9 @@ class InvalidCursorError(Exception):
     """Raised when the pagination cursor cannot be parsed."""
 
 
-def age(birth_date) -> int:
+def age(birth_date) -> int | None:
+    if birth_date is None:
+        return None
     today = datetime.now(UTC).replace(tzinfo=None).date()
     return today.year - birth_date.year - (
         (today.month, today.day) < (birth_date.month, birth_date.day)

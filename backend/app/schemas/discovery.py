@@ -27,7 +27,7 @@ class VisibleProfileDto(ApiModel):
     presenceId: str
     venueId: str
     displayName: str
-    age: int
+    age: int | None
     gender: str | None = None
     bio: str | None = None
     communicationGoals: list[CommunicationGoal]
