@@ -17,6 +17,10 @@ from app.use_cases.delete_profile_photo import DeleteProfilePhotoUseCase
 from app.use_cases.get_my_profile import GetMyProfileUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
+from app.use_cases.list_venue_menu import ListVenueMenuUseCase
+from app.use_cases.redeem_drink import RedeemDrinkUseCase
+from app.use_cases.respond_to_drink_offer import RespondToDrinkOfferUseCase
+from app.use_cases.send_drink_offer import SendDrinkOfferUseCase
 from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
 from app.use_cases.update_my_profile import UpdateMyProfileUseCase
 from app.use_cases.upload_profile_photo import UploadProfilePhotoUseCase
@@ -124,3 +128,33 @@ def get_delete_profile_photo_use_case(
     return _build_with_session(
         container, container.delete_profile_photo_use_case, session
     )
+
+
+def get_send_drink_offer_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> SendDrinkOfferUseCase:
+    return _build_with_session(container, container.send_drink_offer_use_case, session)
+
+
+def get_respond_to_drink_offer_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> RespondToDrinkOfferUseCase:
+    return _build_with_session(
+        container, container.respond_to_drink_offer_use_case, session
+    )
+
+
+def get_redeem_drink_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> RedeemDrinkUseCase:
+    return _build_with_session(container, container.redeem_drink_use_case, session)
+
+
+def get_list_venue_menu_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> ListVenueMenuUseCase:
+    return _build_with_session(container, container.list_venue_menu_use_case, session)

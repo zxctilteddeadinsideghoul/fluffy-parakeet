@@ -3,8 +3,10 @@
 import logging
 from datetime import UTC, datetime
 
+from app.core.config import settings
 from app.repositories.presence import PresenceRepository
 from app.schemas.discovery import VisibleProfileDto
+from app.services.policy import drink_offer_allowed
 from app.use_cases.list_present_profiles import ViewerNotPresentError, to_dto
 
 logger = logging.getLogger(__name__)
@@ -17,8 +19,13 @@ class ProfileNotFoundError(Exception):
 class GetPresentProfileUseCase:
     """Returns the full profile of a present user, or hides it neutrally."""
 
-    def __init__(self, repository: PresenceRepository) -> None:
+    def __init__(
+        self,
+        repository: PresenceRepository,
+        drink_offer_requires_connection: bool = settings.drink_offer_requires_connection,
+    ) -> None:
         self._repository = repository
+        self._drink_offer_requires_connection = drink_offer_requires_connection
 
     async def execute(
         self, *, presence_id: str, viewer_user_id: str
@@ -48,4 +55,7 @@ class GetPresentProfileUseCase:
             viewer_user_id,
             present.user.id,
         )
-        return to_dto(present)
+        return to_dto(
+            present,
+            drink_offer_allowed=drink_offer_allowed(self._drink_offer_requires_connection),
+        )

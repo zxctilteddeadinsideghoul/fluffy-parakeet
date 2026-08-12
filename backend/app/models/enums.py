@@ -77,3 +77,39 @@ class TokenStatus(str, enum.Enum):
     ACTIVE = "active"
     REVOKED = "revoked"
     EXPIRED = "expired"
+
+
+class DrinkOfferStatus(str, enum.Enum):
+    PAYMENT_AUTHORIZED = "payment_authorized"
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+    REDEEMED = "redeemed"
+
+
+class PaymentStatus(str, enum.Enum):
+    CREATED = "created"
+    AUTHORIZATION_PENDING = "authorization_pending"
+    AUTHORIZED = "authorized"
+    CAPTURE_PENDING = "capture_pending"
+    CAPTURED = "captured"
+    VOID_PENDING = "void_pending"
+    VOIDED = "voided"
+    REFUND_PENDING = "refund_pending"
+    REFUNDED = "refunded"
+    FAILED = "failed"
+
+
+class RedemptionStatus(str, enum.Enum):
+    CREATED = "created"
+    REDEEMED = "redeemed"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+class AvailabilityStatus(str, enum.Enum):
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+    ARCHIVED = "archived"

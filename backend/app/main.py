@@ -13,6 +13,7 @@ from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.routes import dependencies as route_dependencies
 from app.routes.auth import router as auth_router
+from app.routes.drink import router as drink_router
 from app.routes.health import router as health_router
 from app.routes.presence import router as presence_router
 from app.routes.profile import router as profile_router
@@ -51,3 +52,4 @@ app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(presence_router)
 app.include_router(profile_router)
+app.include_router(drink_router)

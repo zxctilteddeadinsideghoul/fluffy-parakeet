@@ -270,4 +270,4 @@ async def test_chat_only_mode_excludes_ask_to_approach(db_session):
 
     items, _ = await list_profiles(db_session, venue_id, viewer_id)
 
-    assert items[0].availableActions == ["contact"]
+    assert items[0].availableActions == ["contact", "drink"]
