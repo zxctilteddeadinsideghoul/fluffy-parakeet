@@ -1,12 +1,14 @@
 """Use case: upload a new profile photo."""
 
+import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 
 from app.models.enums import MediaModerationStatus
 from app.repositories.identity import IdentityRepository
 from app.schemas.profile import MyProfileDto
-from app.storage.local import InvalidImageTypeError, LocalPhotoStorage
+from app.storage.base import PhotoStorage
+from app.storage.local import InvalidImageTypeError
 from app.use_cases.get_my_profile import (
     UserNotFoundError,
     build_my_profile_dto,
@@ -23,15 +25,13 @@ class UploadProfilePhotoUseCase:
     def __init__(
         self,
         repository: IdentityRepository,
-        storage: LocalPhotoStorage,
+        storage: PhotoStorage,
         *,
-        media_base_url: str,
         max_upload_bytes: int,
         auto_approve: bool,
     ) -> None:
         self._repository = repository
         self._storage = storage
-        self._media_base_url = media_base_url.rstrip("/")
         self._max_upload_bytes = max_upload_bytes
         self._auto_approve = auto_approve
 
@@ -46,7 +46,7 @@ class UploadProfilePhotoUseCase:
 
         ext = Path(filename).suffix.lower()
         try:
-            storage_key = self._storage.save(user_id, ext, content)
+            storage_key = await asyncio.to_thread(self._storage.save, user_id, ext, content)
         except InvalidImageTypeError:
             raise PhotoUploadError("unsupported image type") from None
 
@@ -62,7 +62,10 @@ class UploadProfilePhotoUseCase:
                 else MediaModerationStatus.PENDING
             ),
         )
-        photo.public_url = f"{self._media_base_url}/media/{photo.id}"
+        public_url = await asyncio.to_thread(
+            self._storage.public_url, storage_key, photo.id
+        )
+        photo.public_url = public_url
         await self._repository.update(photo)
         if self._auto_approve:
             await self._repository.add_photo_verification(

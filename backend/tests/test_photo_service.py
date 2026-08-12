@@ -24,8 +24,7 @@ PNG_CONTENT = b"\x89PNG\r\n\x1a\n" + b"0" * 100
 def make_upload_use_case(session, root: Path) -> UploadProfilePhotoUseCase:
     return UploadProfilePhotoUseCase(
         IdentityRepository(session),
-        LocalPhotoStorage(root),
-        media_base_url="http://test",
+        LocalPhotoStorage(root, media_base_url="http://test"),
         max_upload_bytes=1024,
         auto_approve=True,
     )
