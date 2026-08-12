@@ -16,12 +16,18 @@ from app.use_cases.count_present_users import CountPresentUsersUseCase
 from app.use_cases.delete_profile_photo import DeleteProfilePhotoUseCase
 from app.use_cases.get_my_profile import GetMyProfileUseCase
 from app.use_cases.get_present_profile import GetPresentProfileUseCase
+from app.use_cases.list_conversations import ListConversationsUseCase
+from app.use_cases.list_messages import ListMessagesUseCase
+from app.use_cases.list_my_contact_requests import ListMyContactRequestsUseCase
 from app.use_cases.list_my_drink_offers import ListMyDrinkOffersUseCase
 from app.use_cases.list_present_profiles import ListPresentProfilesUseCase
 from app.use_cases.list_venue_menu import ListVenueMenuUseCase
 from app.use_cases.redeem_drink import RedeemDrinkUseCase
+from app.use_cases.respond_to_contact_request import RespondToContactRequestUseCase
 from app.use_cases.respond_to_drink_offer import RespondToDrinkOfferUseCase
+from app.use_cases.send_contact_request import SendContactRequestUseCase
 from app.use_cases.send_drink_offer import SendDrinkOfferUseCase
+from app.use_cases.send_message import SendMessageUseCase
 from app.use_cases.sign_in_or_register import SignInOrRegisterUseCase
 from app.use_cases.update_my_profile import UpdateMyProfileUseCase
 from app.use_cases.upload_profile_photo import UploadProfilePhotoUseCase
@@ -168,3 +174,53 @@ def get_list_my_drink_offers_use_case(
     return _build_with_session(
         container, container.list_my_drink_offers_use_case, session
     )
+
+
+def get_send_contact_request_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> SendContactRequestUseCase:
+    return _build_with_session(
+        container, container.send_contact_request_use_case, session
+    )
+
+
+def get_respond_to_contact_request_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> RespondToContactRequestUseCase:
+    return _build_with_session(
+        container, container.respond_to_contact_request_use_case, session
+    )
+
+
+def get_list_my_contact_requests_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> ListMyContactRequestsUseCase:
+    return _build_with_session(
+        container, container.list_my_contact_requests_use_case, session
+    )
+
+
+def get_list_conversations_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> ListConversationsUseCase:
+    return _build_with_session(
+        container, container.list_conversations_use_case, session
+    )
+
+
+def get_send_message_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> SendMessageUseCase:
+    return _build_with_session(container, container.send_message_use_case, session)
+
+
+def get_list_messages_use_case(
+    session: AsyncSession = Depends(get_db_session),
+    container: Container = Depends(get_container),
+) -> ListMessagesUseCase:
+    return _build_with_session(container, container.list_messages_use_case, session)

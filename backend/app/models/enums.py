@@ -113,3 +113,29 @@ class AvailabilityStatus(str, enum.Enum):
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
     ARCHIVED = "archived"
+
+
+class RequestStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+    BLOCKED = "blocked"
+
+
+class ConnectionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+    BLOCKED = "blocked"
+
+
+class ConversationStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+    BLOCKED = "blocked"
+
+
+class MessageType(str, enum.Enum):
+    TEXT = "text"
+    SYSTEM = "system"

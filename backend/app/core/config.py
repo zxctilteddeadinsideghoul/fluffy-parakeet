@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redemption_ttl_minutes: int = 15
     payment_provider: str = "stub"
     drink_offer_requires_connection: bool = False
+    contact_request_ttl_minutes: int = 60
 
 
 settings = Settings()
