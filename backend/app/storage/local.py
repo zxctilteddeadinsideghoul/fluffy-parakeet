@@ -1,7 +1,7 @@
-"""Photo storage: saves uploads and serves them back to callers.
+"""Local photo storage: files under the media root, served by /media/{photoId}.
 
-A real object store with presigned URLs will replace this local implementation.
-Until then, files live under the media root and are served by /media/{photoId}.
+This is the fallback backend for local development and tests; MinIO is the
+primary store in the compose stack.
 """
 
 from __future__ import annotations
@@ -25,8 +25,12 @@ class MediaNotFoundError(Exception):
 class LocalPhotoStorage:
     """File-system backed photo storage."""
 
-    def __init__(self, root: Path | None = None) -> None:
+    def __init__(self, root: Path | None = None, media_base_url: str = "") -> None:
         self._root = Path(root) if root is not None else Path(settings.media_root)
+        self._media_base_url = (media_base_url or settings.media_base_url).rstrip("/")
+
+    def ensure_bucket(self) -> None:
+        pass
 
     def save(self, user_id: str, ext: str, content: bytes) -> str:
         if ext not in _IMAGE_EXTENSIONS:
@@ -42,3 +46,6 @@ class LocalPhotoStorage:
         if not path.is_file() or not str(path).startswith(str(self._root.resolve())):
             raise MediaNotFoundError()
         return path.read_bytes()
+
+    def public_url(self, storage_key: str, photo_id: str) -> str:
+        return f"{self._media_base_url}/media/{photo_id}"

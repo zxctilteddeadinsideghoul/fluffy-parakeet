@@ -1,3 +1,6 @@
+"""Application entry point."""
+
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -14,6 +17,7 @@ from app.routes.health import router as health_router
 from app.routes.presence import router as presence_router
 from app.routes.profile import router as profile_router
 
+logger = logging.getLogger("app.main")
 configure_logging(settings.log_level)
 
 
@@ -21,6 +25,10 @@ configure_logging(settings.log_level)
 async def lifespan(_: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    try:
+        app.container.photo_storage().ensure_bucket()  # type: ignore[attr-defined]
+    except Exception:
+        logger.exception("photo storage bucket setup failed")
     yield
 
 

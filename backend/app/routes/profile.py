@@ -1,5 +1,6 @@
 """Routes for the viewer's own public profile."""
 
+import asyncio
 import mimetypes
 from typing import Annotated
 
@@ -19,7 +20,8 @@ from app.routes.dependencies import (
 )
 from app.schemas.base import SuccessEnvelope
 from app.schemas.profile import MyProfileDto, UpdateMyProfileRequest
-from app.storage.local import LocalPhotoStorage, MediaNotFoundError
+from app.storage.base import PhotoStorage
+from app.storage.local import MediaNotFoundError
 from app.use_cases.delete_profile_photo import (
     DeleteProfilePhotoUseCase,
     PhotoNotFoundError,
@@ -101,13 +103,13 @@ async def delete_profile_photo(
 async def serve_media_file(
     photo_id: str,
     db_session: Annotated[AsyncSession, Depends(get_db_session)],
-    storage: Annotated[LocalPhotoStorage, Depends(get_photo_storage)],
+    storage: Annotated[PhotoStorage, Depends(get_photo_storage)],
 ) -> Response:
     photo = await IdentityRepository(db_session).get_photo(photo_id)
     if photo is None or photo.deleted_at is not None:
         raise HTTPException(status_code=404, detail="NOT_FOUND")
     try:
-        content = storage.open(photo.storage_key)
+        content = await asyncio.to_thread(storage.open, photo.storage_key)
     except MediaNotFoundError:
         raise HTTPException(status_code=404, detail="NOT_FOUND") from None
     media_type = mimetypes.guess_type(photo.storage_key)[0] or "application/octet-stream"

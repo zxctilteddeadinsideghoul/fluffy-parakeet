@@ -8,6 +8,7 @@ from app.repositories.identity import IdentityRepository
 from app.repositories.presence import PresenceRepository
 from app.services.events import EventPublisher
 from app.storage.local import LocalPhotoStorage
+from app.storage.minio_storage import MinioPhotoStorage
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
@@ -39,13 +40,16 @@ class Container(containers.DeclarativeContainer):
         session=db_session,
     )
 
-    photo_storage = providers.Singleton(LocalPhotoStorage)
+    photo_storage = providers.Singleton(
+        MinioPhotoStorage
+        if settings.photo_storage_backend == "minio"
+        else LocalPhotoStorage
+    )
 
     upload_profile_photo_use_case = providers.Factory(
         UploadProfilePhotoUseCase,
         repository=identity_repository,
         storage=photo_storage,
-        media_base_url=settings.media_base_url,
         max_upload_bytes=settings.max_photo_upload_bytes,
         auto_approve=settings.environment == "development",
     )

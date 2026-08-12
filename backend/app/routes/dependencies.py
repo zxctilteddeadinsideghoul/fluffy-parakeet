@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.containers.container import Container
 from app.core.config import settings
 from app.core.db import get_db_session
-from app.storage.local import LocalPhotoStorage
+from app.storage.base import PhotoStorage
 from app.use_cases.check_in import CheckInUseCase
 from app.use_cases.check_out import CheckOutUseCase
 from app.use_cases.count_present_users import CountPresentUsersUseCase
@@ -104,7 +104,7 @@ def get_update_my_profile_use_case(
 
 def get_photo_storage(
     container: Container = Depends(get_container),
-) -> LocalPhotoStorage:
+) -> PhotoStorage:
     return container.photo_storage()
 
 
