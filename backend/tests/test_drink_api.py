@@ -271,3 +271,58 @@ async def test_redeem_rejects_unknown_code(client, db_session):
     )
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "NOT_FOUND"
+
+
+async def test_my_offers_endpoint_returns_statuses(client, db_session):
+    venue_id = await create_venue(db_session)
+    sender_id = await create_user(db_session)
+    recipient_id = await create_user(db_session)
+    await create_session(db_session, sender_id, venue_id)
+    recipient_presence = await create_session(db_session, recipient_id, venue_id)
+    item_id = await create_menu_item(db_session, venue_id)
+    offer_id = client.post(
+        "/me/drink-offers",
+        headers=headers(sender_id),
+        json={
+            "recipientPresenceId": recipient_presence,
+            "menuItemId": item_id,
+            "idempotencyKey": "key-1",
+        },
+    ).json()["data"]["id"]
+    client.post(
+        f"/me/drink-offers/{offer_id}/response",
+        headers=headers(recipient_id),
+        json={"decision": "decline"},
+    )
+
+    sender_list = client.get("/me/drink-offers", headers=headers(sender_id))
+    assert sender_list.status_code == 200
+    assert sender_list.json() == {
+        "data": [
+            {
+                "id": offer_id,
+                "senderUserId": sender_id,
+                "recipientUserId": recipient_id,
+                "senderPresenceId": sender_list.json()["data"][0]["senderPresenceId"],
+                "recipientPresenceId": recipient_presence,
+                "venueId": venue_id,
+                "menuItemId": item_id,
+                "connectionId": None,
+                "status": "declined",
+                "itemNameSnapshot": "Negroni",
+                "priceSnapshot": {"amountMinor": 350, "currency": "RUB"},
+                "createdAt": sender_list.json()["data"][0]["createdAt"],
+                "respondedAt": sender_list.json()["data"][0]["respondedAt"],
+                "expiresAt": sender_list.json()["data"][0]["expiresAt"],
+            }
+        ]
+    }
+
+    recipient_list = client.get("/me/drink-offers", headers=headers(recipient_id))
+    assert recipient_list.status_code == 200
+    assert [item["status"] for item in recipient_list.json()["data"]] == ["declined"]
+
+    stranger_list = client.get(
+        "/me/drink-offers", headers=headers(await create_user(db_session))
+    )
+    assert stranger_list.json() == {"data": []}

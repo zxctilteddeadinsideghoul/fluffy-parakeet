@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.drink import DrinkOfferOrm, RedemptionOrm
 from app.routes.dependencies import (
     get_current_user_id,
+    get_list_my_drink_offers_use_case,
     get_list_venue_menu_use_case,
     get_redeem_drink_use_case,
     get_respond_to_drink_offer_use_case,
@@ -20,6 +21,10 @@ from app.schemas.drink import (
     RedemptionDto,
     RespondToDrinkOfferRequest,
     SendDrinkOfferRequest,
+)
+from app.use_cases.list_my_drink_offers import (
+    ListMyDrinkOffersUseCase,
+    offer_to_dto,
 )
 from app.use_cases.list_venue_menu import ListVenueMenuUseCase, VenueNotFoundError
 from app.use_cases.redeem_drink import (
@@ -56,25 +61,7 @@ router = APIRouter(tags=["drinks"])
 
 
 def _offer_dto(offer: DrinkOfferOrm) -> DrinkOfferDto:
-    return DrinkOfferDto(
-        id=offer.id,
-        sender_user_id=offer.sender_user_id,
-        recipient_user_id=offer.recipient_user_id,
-        sender_presence_id=offer.sender_presence_id,
-        recipient_presence_id=offer.recipient_presence_id,
-        venue_id=offer.venue_id,
-        menu_item_id=offer.menu_item_id,
-        connection_id=offer.connection_id,
-        status=offer.status,
-        item_name_snapshot=offer.item_name_snapshot,
-        price_snapshot={
-            "amount_minor": offer.price_minor_snapshot,
-            "currency": offer.currency_snapshot,
-        },
-        created_at=offer.created_at,
-        responded_at=offer.responded_at,
-        expires_at=offer.expires_at,
-    )
+    return offer_to_dto(offer)
 
 
 @router.get(
@@ -90,6 +77,18 @@ async def list_venue_menu(
     except VenueNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "NOT_FOUND") from None
     return SuccessEnvelope(data=items)
+
+
+@router.get(
+    "/me/drink-offers",
+    response_model=SuccessEnvelope[list[DrinkOfferDto]],
+)
+async def list_my_drink_offers(
+    use_case: ListMyDrinkOffersUseCase = Depends(get_list_my_drink_offers_use_case),
+    user_id: str = Depends(get_current_user_id),
+) -> SuccessEnvelope[list[DrinkOfferDto]]:
+    offers = await use_case.execute(user_id=user_id)
+    return SuccessEnvelope(data=offers)
 
 
 @router.post(

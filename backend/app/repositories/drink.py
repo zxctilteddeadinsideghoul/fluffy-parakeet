@@ -86,6 +86,19 @@ class DrinkRepository:
     async def get_offer(self, offer_id: str) -> DrinkOfferOrm | None:
         return await self._session.get(DrinkOfferOrm, offer_id)
 
+    async def list_offers_for_user(self, user_id: str) -> list[DrinkOfferOrm]:
+        stmt = (
+            select(DrinkOfferOrm)
+            .where(
+                or_(
+                    DrinkOfferOrm.sender_user_id == user_id,
+                    DrinkOfferOrm.recipient_user_id == user_id,
+                )
+            )
+            .order_by(DrinkOfferOrm.created_at.desc(), DrinkOfferOrm.id.desc())
+        )
+        return list((await self._session.execute(stmt)).scalars().all())
+
     async def get_payment_by_idempotency(
         self, payer_user_id: str, idempotency_key: str
     ) -> PaymentOrm | None:

@@ -13,6 +13,7 @@ from app.models.enums import (
 from app.repositories.drink import DrinkRepository
 from app.schemas.drink import RedeemDrinkRequest, SendDrinkOfferRequest
 from app.services.events import EventPublisher
+from app.use_cases.list_my_drink_offers import ListMyDrinkOffersUseCase
 from app.use_cases.list_venue_menu import ListVenueMenuUseCase, VenueNotFoundError
 from app.use_cases.redeem_drink import (
     RedeemDrinkUseCase,
@@ -432,3 +433,71 @@ async def test_menu_lists_available_items_only(db_session):
 async def test_menu_raises_for_unknown_venue(db_session):
     with pytest.raises(VenueNotFoundError):
         await ListVenueMenuUseCase(DrinkRepository(db_session)).execute(venue_id="nope")
+
+
+async def test_list_offers_returns_sent_and_received(db_session):
+    venue_id = await create_venue(db_session)
+    sender_a = await create_user(db_session)
+    recipient_a = await create_user(db_session)
+    sender_c = await create_user(db_session)
+    sender_a_presence = await create_session(db_session, sender_a, venue_id)
+    recipient_presence = await create_session(db_session, recipient_a, venue_id)
+    await create_session(db_session, sender_c, venue_id)
+    item_id = await create_menu_item(db_session, venue_id)
+    repo = DrinkRepository(db_session)
+    send = SendDrinkOfferUseCase(db_session, repo)
+    offer_sent = await send.execute(
+        user_id=sender_a,
+        command=SendDrinkOfferRequest(
+            recipientPresenceId=recipient_presence,
+            menuItemId=item_id,
+            idempotencyKey="key-1",
+        ),
+    )
+    offer_received = await send.execute(
+        user_id=sender_c,
+        command=SendDrinkOfferRequest(
+            recipientPresenceId=sender_a_presence,
+            menuItemId=item_id,
+            idempotencyKey="key-2",
+        ),
+    )
+    offers = await ListMyDrinkOffersUseCase(repo).execute(user_id=sender_a)
+    ids = [offer.id for offer in offers]
+    assert offer_sent.id in ids
+    assert offer_received.id in ids
+    assert offer_sent.sender_user_id == sender_a
+    assert offer_received.recipient_user_id == sender_a
+
+
+async def test_list_offers_orders_newest_first(db_session):
+    venue_id = await create_venue(db_session)
+    sender_a = await create_user(db_session)
+    recipient_a = await create_user(db_session)
+    sender_c = await create_user(db_session)
+    await create_session(db_session, sender_a, venue_id)
+    recipient_presence = await create_session(db_session, recipient_a, venue_id)
+    await create_session(db_session, sender_c, venue_id)
+    item_id = await create_menu_item(db_session, venue_id)
+    repo = DrinkRepository(db_session)
+    send = SendDrinkOfferUseCase(db_session, repo)
+    offer_older = await send.execute(
+        user_id=sender_a,
+        command=SendDrinkOfferRequest(
+            recipientPresenceId=recipient_presence,
+            menuItemId=item_id,
+            idempotencyKey="key-1",
+        ),
+    )
+    offer_newer = await send.execute(
+        user_id=sender_c,
+        command=SendDrinkOfferRequest(
+            recipientPresenceId=recipient_presence,
+            menuItemId=item_id,
+            idempotencyKey="key-2",
+        ),
+    )
+    offer_older.created_at = offer_older.created_at - timedelta(hours=1)
+    await db_session.flush()
+    offers = await ListMyDrinkOffersUseCase(repo).execute(user_id=recipient_a)
+    assert [offer.id for offer in offers] == [offer_newer.id, offer_older.id]
