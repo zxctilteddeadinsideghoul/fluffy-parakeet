@@ -34,6 +34,10 @@ This is a full-stack monorepo. Create new files in this structure from the start
 
 Agents must preserve this separation. Never place React or Python source in the root. Create directories when they gain a concrete responsibility; avoid empty placeholders.
 
+## Frontend Target Platform
+
+The frontend targets the mobile Telegram Mini App experience. Design and implement every frontend screen mobile-first for use inside the Telegram in-app webview; do not treat desktop layouts as the primary target.
+
 ## Mandatory Data and Domain Contracts
 
 Before planning, implementing, or reviewing any product change, agents MUST read and follow both contract documents in full:
