@@ -10,6 +10,17 @@
   border: 0;
 }
 
+/* Red accent — design variant 1b «Красный · насыщенный». Scoped to the profile
+   and chat screens: it re-points the brand tokens locally, so shared components
+   pick the red up through the cascade while auth and onboarding stay purple. */
+.accent-red {
+  --color-brand: #cc2936;
+  --color-brand-hover: #ad2029;
+  --color-brand-soft: #fceeef;
+  --color-brand-border: #f0b9be;
+  --color-focus: #cc2936;
+}
+
 .app-canvas {
   min-height: 100vh;
   display: grid;
@@ -365,6 +376,163 @@
   height: 32px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
+}
+
+/* Marks a control whose value is not real server state yet. */
+.stub-tag {
+  padding: 2px 7px;
+  color: var(--color-brand);
+  background: var(--color-surface);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.section-label {
+  padding-left: 2px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.presence-bar {
+  flex: none;
+  padding: 12px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.presence-bar__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 12px;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.presence-bar__dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  background: var(--color-brand);
+  border-radius: 50%;
+}
+
+.presence-bar__mark {
+  display: flex;
+  flex: none;
+  color: var(--color-brand);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  color: #b4b1ab;
+  background: #e7e5e0;
+  object-fit: cover;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.avatar--muted {
+  color: #cfccc6;
+  background: #f2f1ee;
+}
+
+.avatar--sm {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+.avatar--md {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.avatar--lg {
+  width: 92px;
+  height: 92px;
+  border-radius: 26px;
+  font-size: 36px;
+}
+
+.tab-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px 26px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.tab-bar__tab {
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.tab-bar__tab--active {
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.tab-placeholder {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 34px 28px 124px;
+}
+
+.tab-placeholder__content {
+  margin: auto 0;
+}
+
+.tab-placeholder__content h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.tab-placeholder__content p {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15.5px;
+  line-height: 1.5;
 }
 
 @media (max-width: 480px) {
