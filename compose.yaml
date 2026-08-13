@@ -21,6 +21,17 @@ services:
     ports:
       - "5173:5173"
       - "6006:6006"
+    environment:
+      # Proxy target, resolved by the dev server inside the network — so it uses
+      # the Compose service name. The browser only ever calls /api on :5173.
+      BACKEND_ORIGIN: http://backend:8000
+      VITE_DEV_USER_ID: ${VITE_DEV_USER_ID:-}
+      # Bind mounts do not deliver file events into the container on Windows/macOS.
+      VITE_WATCH_POLLING: "true"
+    volumes:
+      # Live-reload the source; keep the image's node_modules (built for Alpine).
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 
