@@ -24,7 +24,9 @@ def build_my_profile_dto(
             id=user.id,
             displayName="",
             age=age(user.birth_date),
+            birthDate=user.birth_date,
             defaultApproachMode=ApproachMode.ASK_BEFORE_APPROACH,
+            visibilityEnabled=False,
             verification={"isVerified": is_verified},
         )
 
@@ -37,10 +39,12 @@ def build_my_profile_dto(
         id=user.id,
         displayName=profile.display_name,
         age=age(user.birth_date),
+        birthDate=user.birth_date,
         gender=profile.gender,
         bio=profile.bio,
         communicationGoals=goals,
         defaultApproachMode=profile.default_approach_mode,
+        visibilityEnabled=profile.visibility_enabled,
         photos=[
             MyProfilePhotoDto(
                 id=photo.id,
