@@ -155,8 +155,8 @@ type User = {
 
 type Profile = {
   userId: UUID;
-  displayName: string;               // непустое значение требуется при visibilityEnabled = true
-  gender?: string;
+  displayName: NonEmptyString;
+  gender: NonEmptyString;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   defaultApproachMode: ApproachMode;
@@ -518,8 +518,8 @@ type AuthResponseDto = {
 type MyProfileDto = {
   id: UUID;
   displayName: string;
-  age: number | null;
-  gender?: string;
+  age: number;
+  gender: string;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   defaultApproachMode: ApproachMode;
@@ -537,8 +537,8 @@ type VisibleProfileDto = {
   presenceId: UUID;
   venueId: UUID;
   displayName: string;
-  age: number | null;
-  gender?: string;
+  age: number;
+  gender: string;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   approachMode: ApproachMode;
