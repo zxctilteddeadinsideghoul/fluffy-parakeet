@@ -23,10 +23,12 @@ class MyProfileDto(ApiModel):
     id: str
     displayName: str
     age: int | None
+    birthDate: date | None
     gender: str | None = None
     bio: str | None = None
     communicationGoals: list[CommunicationGoal]
     defaultApproachMode: ApproachMode
+    visibilityEnabled: bool
     photos: list[MyProfilePhotoDto] = Field(default_factory=list)
     verification: dict[str, bool]
 
@@ -34,10 +36,10 @@ class MyProfileDto(ApiModel):
 class UpdateMyProfileRequest(ApiModel):
     """Command UpdateMyProfileCommand (contract section 6)."""
 
-    displayName: str = Field(max_length=100)
+    displayName: str | None = Field(default=None, max_length=100)
     gender: str | None = Field(default=None, max_length=32)
     bio: str | None = Field(default=None, max_length=1000)
     birthDate: date | None = None
-    communicationGoals: list[CommunicationGoal]
-    defaultApproachMode: ApproachMode
-    visibilityEnabled: bool
+    communicationGoals: list[CommunicationGoal] | None = None
+    defaultApproachMode: ApproachMode | None = None
+    visibilityEnabled: bool | None = None

@@ -46,6 +46,9 @@ class PresenceRepository:
         venue = await self._session.get(VenueOrm, venue_id)
         return venue.status.value if venue is not None else None
 
+    async def get_venue(self, venue_id: str) -> VenueOrm | None:
+        return await self._session.get(VenueOrm, venue_id)
+
     async def find_active_token(
         self, token_hash: str, now: datetime
     ) -> VenueCheckInTokenOrm | None:

@@ -32,20 +32,29 @@ class UpdateMyProfileUseCase:
         if profile is None:
             profile = ProfileOrm(user_id=user_id)
 
-        if command.visibilityEnabled and not command.displayName.strip():
+        if command.visibilityEnabled is not None:
+            profile.visibility_enabled = command.visibilityEnabled
+
+        if command.displayName is not None:
+            profile.display_name = command.displayName.strip()
+
+        if profile.visibility_enabled and not profile.display_name:
             raise ProfileValidationError(
                 "displayName is required when visibility is enabled"
             )
 
-        profile.display_name = command.displayName.strip()
-        profile.gender = command.gender
-        profile.bio = command.bio
-        profile.communication_goals = ",".join(
-            goal.value for goal in command.communicationGoals
-        )
-        profile.default_approach_mode = command.defaultApproachMode
-        profile.visibility_enabled = command.visibilityEnabled
-        user.birth_date = command.birthDate
+        if command.gender is not None:
+            profile.gender = command.gender
+        if command.bio is not None:
+            profile.bio = command.bio
+        if command.communicationGoals is not None:
+            profile.communication_goals = ",".join(
+                goal.value for goal in command.communicationGoals
+            )
+        if command.defaultApproachMode is not None:
+            profile.default_approach_mode = command.defaultApproachMode
+        if command.birthDate is not None:
+            user.birth_date = command.birthDate
 
         await self._repository.update(profile)
         await self._repository.update(user)

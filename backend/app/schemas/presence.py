@@ -34,3 +34,13 @@ class VenuePresenceCountResponse(ApiModel):
 
     venue_id: str
     count: int = Field(ge=0)
+
+
+class MyPresenceDto(ApiModel):
+    status: PresenceStatus
+    venue_id: str
+    venue_name: str
+    checked_in_at: datetime
+    expires_at: datetime
+    visibility: PresenceVisibility
+    approach_mode: ApproachMode

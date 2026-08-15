@@ -33,7 +33,9 @@ class MenuItemDto(ApiModel):
 class DrinkOfferDto(ApiModel):
     id: str
     sender_user_id: str
+    sender_display_name: str
     recipient_user_id: str
+    recipient_display_name: str
     sender_presence_id: str
     recipient_presence_id: str
     venue_id: str
