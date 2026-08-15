@@ -41,6 +41,11 @@ class ConversationDto(ApiModel):
     connection_id: str
     status: ConversationStatus
     peer_user_id: str
+    peer_display_name: str
+    peer_photo_url: str | None = None
+    peer_age: int | None = None
+    peer_is_verified: bool | None = None
+    venue_name: str | None = None
     created_at: datetime
     last_message_body: str | None = None
     last_message_at: datetime | None = None
