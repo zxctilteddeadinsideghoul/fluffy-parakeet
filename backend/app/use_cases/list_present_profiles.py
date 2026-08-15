@@ -5,10 +5,11 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from app.core.config import settings
 from app.models.enums import CommunicationGoal
 from app.repositories.presence import PresenceRepository
 from app.schemas.discovery import ProfilePhotoDto, VisibleProfileDto
-from app.services.policy import available_actions
+from app.services.policy import available_actions, drink_offer_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def _goals(raw: str) -> list[CommunicationGoal]:
     return goals
 
 
-def to_dto(present) -> VisibleProfileDto:
+def to_dto(present, *, drink_offer_allowed: bool = False) -> VisibleProfileDto:
     return VisibleProfileDto(
         userId=present.user.id,
         presenceId=present.session.id,
@@ -74,15 +75,20 @@ def to_dto(present) -> VisibleProfileDto:
             for p in present.photos
         ],
         isVerified=present.is_verified,
-        availableActions=available_actions(present.session.approach_mode),
+        availableActions=available_actions(present.session.approach_mode, drink_offer_allowed),
     )
 
 
 class ListPresentProfilesUseCase:
     """Returns a page of present users visible to the viewer at the venue."""
 
-    def __init__(self, repository: PresenceRepository) -> None:
+    def __init__(
+        self,
+        repository: PresenceRepository,
+        drink_offer_requires_connection: bool = settings.drink_offer_requires_connection,
+    ) -> None:
         self._repository = repository
+        self._drink_offer_requires_connection = drink_offer_requires_connection
 
     async def execute(
         self, *, venue_id: str, viewer_user_id: str, limit: int, cursor: str | None
@@ -110,7 +116,13 @@ class ListPresentProfilesUseCase:
             limit=limit,
             after=after,
         )
-        items = [to_dto(present) for present in present_profiles]
+        items = [
+            to_dto(
+                present,
+                drink_offer_allowed=drink_offer_allowed(self._drink_offer_requires_connection),
+            )
+            for present in present_profiles
+        ]
         next_cursor = None
         if has_more and present_profiles:
             last = present_profiles[-1]

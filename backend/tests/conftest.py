@@ -12,6 +12,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+import app.models.communication
+import app.models.drink
 import app.models.presence
 import app.models.profile_photo
 import app.models.trust
@@ -20,8 +22,16 @@ import app.models.venue
 import app.models.venue_check_in_token
 from app.core.db import Base, get_db_session
 from app.main import app
+from app.models.communication import (
+    ConnectionOrm,
+    ContactRequestOrm,
+    ConversationMemberOrm,
+    ConversationOrm,
+)
+from app.models.drink import MenuItemOrm
 from app.models.enums import (
     ApproachMode,
+    AvailabilityStatus,
     CheckInMethod,
     MediaModerationStatus,
     PresenceStatus,
@@ -194,3 +204,63 @@ async def create_photo(
     session.add(photo)
     await session.flush()
     return photo.id
+
+
+async def create_menu_item(
+    session,
+    venue_id: str,
+    *,
+    name: str = "Negroni",
+    price_minor: int = 350,
+    availability: AvailabilityStatus = AvailabilityStatus.AVAILABLE,
+) -> str:
+    item = MenuItemOrm(
+        venue_id=venue_id,
+        name=name,
+        price_minor=price_minor,
+        currency="RUB",
+        availability_status=availability,
+    )
+    session.add(item)
+    await session.flush()
+    return item.id
+
+
+async def create_connection_with_chat(
+    session,
+    user_a: str,
+    user_b: str,
+    venue_id: str,
+    *,
+    request_id: str | None = None,
+) -> tuple[str, str]:
+    """Creates an accepted contact request plus connection, conversation and
+    members. Returns (request_id, conversation_id)."""
+    if request_id is None:
+        request = ContactRequestOrm(
+            sender_user_id=user_a,
+            recipient_user_id=user_b,
+            sender_presence_id="presence-sender",
+            recipient_presence_id="presence-recipient",
+            venue_id=venue_id,
+            status="accepted",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+        session.add(request)
+        await session.flush()
+        request_id = request.id
+    connection = ConnectionOrm(
+        user_a_id=user_a,
+        user_b_id=user_b,
+        venue_id=venue_id,
+        source_request_id=request_id,
+    )
+    session.add(connection)
+    await session.flush()
+    conversation = ConversationOrm(connection_id=connection.id)
+    session.add(conversation)
+    await session.flush()
+    session.add(ConversationMemberOrm(conversation_id=conversation.id, user_id=user_a))
+    session.add(ConversationMemberOrm(conversation_id=conversation.id, user_id=user_b))
+    await session.flush()
+    return request_id, conversation.id

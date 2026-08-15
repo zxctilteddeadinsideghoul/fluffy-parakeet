@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     minio_region: str = "us-east-1"
     minio_public_endpoint: str = "http://localhost:9000"
     minio_url_expiry_seconds: int = 3600
+    drink_offer_ttl_minutes: int = 60
+    redemption_ttl_minutes: int = 15
+    payment_provider: str = "stub"
+    drink_offer_requires_connection: bool = False
+    contact_request_ttl_minutes: int = 60
 
 
 settings = Settings()

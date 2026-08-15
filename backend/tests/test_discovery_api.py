@@ -33,7 +33,7 @@ async def test_list_profiles_returns_page(client, db_session):
     assert item["age"] == 26
     assert item["isVerified"] is True
     assert item["photos"][0]["url"]
-    assert item["availableActions"] == ["contact", "ask_to_approach"]
+    assert item["availableActions"] == ["contact", "drink", "ask_to_approach"]
 
 
 async def test_list_profiles_without_viewer_presence_returns_409(client, db_session):
