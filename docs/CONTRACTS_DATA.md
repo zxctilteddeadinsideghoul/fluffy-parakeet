@@ -149,7 +149,7 @@ type User = {
 type Profile = {
   userId: UUID;
   displayName: NonEmptyString;
-  gender?: string;
+  gender: NonEmptyString;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   defaultApproachMode: ApproachMode;
@@ -507,7 +507,7 @@ type MyProfileDto = {
   id: UUID;
   displayName: string;
   age: number;
-  gender?: string;
+  gender: string;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   defaultApproachMode: ApproachMode;
@@ -521,7 +521,7 @@ type VisibleProfileDto = {
   venueId: UUID;
   displayName: string;
   age: number;
-  gender?: string;
+  gender: string;
   bio?: string;
   communicationGoals: CommunicationGoal[];
   approachMode: ApproachMode;
