@@ -8,6 +8,7 @@ from app.routes.dependencies import (
     get_check_out_use_case,
     get_count_present_users_use_case,
     get_current_user_id,
+    get_get_my_presence_use_case,
     get_list_present_profiles_use_case,
     get_present_profile_use_case,
 )
@@ -15,6 +16,7 @@ from app.schemas.base import SuccessEnvelope
 from app.schemas.discovery import PageDto, VisibleProfileDto
 from app.schemas.presence import (
     CheckInRequest,
+    MyPresenceDto,
     PresenceSessionResponse,
     VenuePresenceCountResponse,
 )
@@ -35,6 +37,10 @@ from app.use_cases.count_present_users import (
 from app.use_cases.count_present_users import (
     VenueNotFoundError as CountVenueNotFoundError,
 )
+from app.use_cases.get_my_presence import (
+    GetMyPresenceUseCase,
+    PresenceNotActiveError as MyPresenceNotActiveError,
+)
 from app.use_cases.get_present_profile import (
     GetPresentProfileUseCase,
     ProfileNotFoundError,
@@ -49,6 +55,18 @@ from app.use_cases.list_present_profiles import (
 )
 
 router = APIRouter(tags=["presence"])
+
+
+@router.get("/me/presence", response_model=SuccessEnvelope[MyPresenceDto])
+async def get_my_presence(
+    use_case: GetMyPresenceUseCase = Depends(get_get_my_presence_use_case),
+    user_id: str = Depends(get_current_user_id),
+) -> SuccessEnvelope[MyPresenceDto]:
+    try:
+        presence = await use_case.execute(user_id=user_id)
+    except MyPresenceNotActiveError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "NOT_FOUND") from None
+    return SuccessEnvelope(data=presence)
 
 
 @router.post(
