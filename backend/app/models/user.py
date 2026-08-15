@@ -5,7 +5,15 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -25,6 +33,9 @@ def new_uuid() -> str:
 
 class UserOrm(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("auth_provider", "auth_subject", name="uq_users_auth_identity"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     status: Mapped[UserStatus] = mapped_column(
@@ -35,7 +46,7 @@ class UserOrm(Base):
     email_normalized: Mapped[str | None] = mapped_column(String(254))
     auth_provider: Mapped[str] = mapped_column(String(64))
     auth_subject: Mapped[str] = mapped_column(String(255))
-    birth_date: Mapped[date] = mapped_column(Date)
+    birth_date: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow

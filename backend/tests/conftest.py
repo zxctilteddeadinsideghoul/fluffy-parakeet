@@ -1,24 +1,39 @@
 """Shared test fixtures and factories."""
 
+import tempfile
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from hashlib import sha256
+from pathlib import Path
 
 import pytest
+from dependency_injector import providers
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+import app.models.communication
+import app.models.drink
 import app.models.presence
+import app.models.profile_photo
 import app.models.trust
 import app.models.user
 import app.models.venue
 import app.models.venue_check_in_token
 from app.core.db import Base, get_db_session
 from app.main import app
+from app.models.communication import (
+    ConnectionOrm,
+    ContactRequestOrm,
+    ConversationMemberOrm,
+    ConversationOrm,
+)
+from app.models.drink import MenuItemOrm
 from app.models.enums import (
     ApproachMode,
+    AvailabilityStatus,
     CheckInMethod,
+    MediaModerationStatus,
     PresenceStatus,
     PresenceVisibility,
     TokenStatus,
@@ -27,10 +42,12 @@ from app.models.enums import (
     VerificationType,
 )
 from app.models.presence import PresenceSessionOrm
+from app.models.profile_photo import ProfilePhotoOrm
 from app.models.trust import BlockOrm
 from app.models.user import ProfileOrm, UserOrm, VerificationOrm
 from app.models.venue import VenueOrm
 from app.models.venue_check_in_token import VenueCheckInTokenOrm
+from app.storage.local import LocalPhotoStorage
 
 TEST_DATABASE_URL = "sqlite+aiosqlite://"
 
@@ -55,10 +72,15 @@ async def client(db_session):
     async def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db_session] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
+    with tempfile.TemporaryDirectory() as media_dir:
+        app.container.photo_storage.override(  # type: ignore[attr-defined]
+            providers.Object(LocalPhotoStorage(Path(media_dir)))
+        )
+        app.dependency_overrides[get_db_session] = override_get_db
+        with TestClient(app) as test_client:
+            yield test_client
+        app.dependency_overrides.clear()
+        app.container.photo_storage.reset_override()  # type: ignore[attr-defined]
 
 
 def utcnow() -> datetime:
@@ -71,19 +93,23 @@ async def create_user(
     status: UserStatus = UserStatus.ACTIVE,
     verified: bool = True,
     profile_visible: bool = True,
+    display_name: str | None = None,
+    bio: str | None = None,
+    birth_date: date | None = date(2000, 1, 1),
 ) -> str:
     user = UserOrm(
         status=status,
         auth_provider="test",
         auth_subject=uuid.uuid4().hex,
-        birth_date=date(2000, 1, 1),
+        birth_date=birth_date,
     )
     session.add(user)
     await session.flush()
     session.add(
         ProfileOrm(
             user_id=user.id,
-            display_name=f"user-{user.id[:8]}",
+            display_name=display_name or f"user-{user.id[:8]}",
+            bio=bio,
             communication_goals="dating",
             default_approach_mode=ApproachMode.ASK_BEFORE_APPROACH,
             visibility_enabled=profile_visible,
@@ -116,6 +142,7 @@ async def create_session(
     *,
     status: PresenceStatus = PresenceStatus.ACTIVE,
     visibility: PresenceVisibility = PresenceVisibility.VISIBLE,
+    approach_mode: ApproachMode = ApproachMode.ASK_BEFORE_APPROACH,
     expires_in: timedelta = timedelta(hours=2),
 ) -> str:
     presence = PresenceSessionOrm(
@@ -123,6 +150,7 @@ async def create_session(
         venue_id=venue_id,
         status=status,
         visibility=visibility,
+        approach_mode=approach_mode,
         check_in_method=CheckInMethod.VENUE_QR,
         expires_at=utcnow() + expires_in,
     )
@@ -156,3 +184,83 @@ async def create_token(
     )
     await session.flush()
     return raw_token
+
+
+async def create_photo(
+    session,
+    user_id: str,
+    *,
+    position: int = 0,
+    url: str = "https://cdn.example.com/photo.jpg",
+    moderation: MediaModerationStatus = MediaModerationStatus.APPROVED,
+) -> str:
+    photo = ProfilePhotoOrm(
+        user_id=user_id,
+        storage_key=f"key-{user_id[:8]}-{position}",
+        public_url=url,
+        position=position,
+        moderation_status=moderation,
+    )
+    session.add(photo)
+    await session.flush()
+    return photo.id
+
+
+async def create_menu_item(
+    session,
+    venue_id: str,
+    *,
+    name: str = "Negroni",
+    price_minor: int = 350,
+    availability: AvailabilityStatus = AvailabilityStatus.AVAILABLE,
+) -> str:
+    item = MenuItemOrm(
+        venue_id=venue_id,
+        name=name,
+        price_minor=price_minor,
+        currency="RUB",
+        availability_status=availability,
+    )
+    session.add(item)
+    await session.flush()
+    return item.id
+
+
+async def create_connection_with_chat(
+    session,
+    user_a: str,
+    user_b: str,
+    venue_id: str,
+    *,
+    request_id: str | None = None,
+) -> tuple[str, str]:
+    """Creates an accepted contact request plus connection, conversation and
+    members. Returns (request_id, conversation_id)."""
+    if request_id is None:
+        request = ContactRequestOrm(
+            sender_user_id=user_a,
+            recipient_user_id=user_b,
+            sender_presence_id="presence-sender",
+            recipient_presence_id="presence-recipient",
+            venue_id=venue_id,
+            status="accepted",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+        session.add(request)
+        await session.flush()
+        request_id = request.id
+    connection = ConnectionOrm(
+        user_a_id=user_a,
+        user_b_id=user_b,
+        venue_id=venue_id,
+        source_request_id=request_id,
+    )
+    session.add(connection)
+    await session.flush()
+    conversation = ConversationOrm(connection_id=connection.id)
+    session.add(conversation)
+    await session.flush()
+    session.add(ConversationMemberOrm(conversation_id=conversation.id, user_id=user_a))
+    session.add(ConversationMemberOrm(conversation_id=conversation.id, user_id=user_b))
+    await session.flush()
+    return request_id, conversation.id

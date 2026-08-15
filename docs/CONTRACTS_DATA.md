@@ -54,6 +54,10 @@ type Page<T> = {
   items: T[];
   nextCursor: string | null;
 };
+
+type ResponseEnvelope<T> = {
+  data: T;
+};
 ```
 
 Правила сериализации:
@@ -64,6 +68,7 @@ type Page<T> = {
 - Денежные суммы MUST NOT передаваться как числа с плавающей точкой.
 - Отсутствующее необязательное поле передаётся как отсутствие ключа; `null` используется только там, где явно указан.
 - Все команды, создающие платёж или изменяющие его состояние, MUST принимать `idempotencyKey`.
+- Все успешные HTTP-ответы MUST возвращать тело вида `ResponseEnvelope`: `{"data": <значение>}` — значение может быть DTO, `Page<T>` или примитивом. Ошибки возвращаются в конверте из раздела 7.
 
 ## 3. Перечисления
 
@@ -72,6 +77,8 @@ type UserStatus = "active" | "limited" | "suspended" | "deleted";
 type VerificationType = "photo" | "video" | "identity";
 type VerificationStatus = "pending" | "approved" | "rejected" | "expired";
 type MediaModerationStatus = "pending" | "approved" | "rejected";
+
+type AuthProvider = "email" | "yandex" | "vk";
 
 type CommunicationGoal =
   | "dating"
@@ -138,9 +145,9 @@ type User = {
   status: UserStatus;
   phoneNormalized?: string;         // private
   emailNormalized?: string;         // private
-  authProvider: string;
+  authProvider: AuthProvider | string;
   authSubject: string;               // private; unique вместе с authProvider
-  birthDate: LocalDate;              // private; наружу отдаётся age
+  birthDate?: LocalDate;             // private; наружу отдаётся age; может быть не заполнено
   createdAt: Instant;
   updatedAt: Instant;
   deletedAt: Instant | null;
@@ -500,9 +507,14 @@ type DomainEvent<T = Record<string, unknown>> = {
 
 ## 5. Публичные DTO
 
-Хранимые модели MUST NOT отдаваться клиенту напрямую.
+Хранимые модели MUST NOT отдаваться клиенту напрямую. Все успешные ответы возвращаются внутри конверта `{"data": <DTO>}` (раздел 2); схемы ниже описывают значение поля `data`.
 
 ```ts
+type AuthResponseDto = {
+  userId: UUID;
+  isNewUser: boolean;                // true — аккаунт создан только что
+};
+
 type MyProfileDto = {
   id: UUID;
   displayName: string;
@@ -511,7 +523,12 @@ type MyProfileDto = {
   bio?: string;
   communicationGoals: CommunicationGoal[];
   defaultApproachMode: ApproachMode;
-  photos: Array<{ id: UUID; url: string; position: number }>;
+  photos: Array<{
+    id: UUID;
+    url: string;
+    position: number;
+    moderationStatus: MediaModerationStatus;
+  }>;
   verification: { isVerified: boolean };
 };
 
@@ -536,6 +553,26 @@ type VisibleProfileDto = {
 ## 6. Контракты команд
 
 ```ts
+type RegisterCommand = {
+  authProvider: AuthProvider;
+  authSubject: string;               // email для провайдера "email"; subject у OAuth-провайдера
+  email?: string;                    // привязывается к emailNormalized, когда доступна
+};
+
+type UpdateMyProfileCommand = {
+  displayName: string;               // непустое значение при visibilityEnabled = true
+  gender?: string;
+  bio?: string;
+  birthDate?: LocalDate;             // наружу отдаётся только age
+  communicationGoals: CommunicationGoal[];
+  defaultApproachMode: ApproachMode;
+  visibilityEnabled: boolean;
+};
+
+type DeleteProfilePhotoCommand = {
+  photoId: UUID;
+};
+
 type CheckInCommand = {
   venueToken: string;
   visibility: PresenceVisibility;
@@ -581,6 +618,8 @@ type CreateReportCommand = {
 };
 ```
 
+Загрузка фото — отдельный multipart-командный поток (`POST /me/profile/photos`, поле `file`). Сервер сохраняет файл в хранилище, создаёт `ProfilePhoto` с `storageKey`, короткоживущим `publicUrl`, `position = max(1 + max(position))` и `moderationStatus`. Удаление — команда `DeleteProfilePhotoCommand` (soft-delete через `deletedAt`). Политика модерации (кто и когда одобряет) задаётся отдельно; в development-окружении загруженные фото получают статус `approved` для локальной разработки.
+
 Общие проверки команд:
 
 - аутентифицированный пользователь берётся из серверного контекста, а не из `actorUserId` тела;
@@ -613,6 +652,7 @@ type ApiError = {
 | `VERIFICATION_REQUIRED` | 403 | Нужна верификация |
 | `ACTIVE_PRESENCE_REQUIRED` | 409 | Нет действующей сессии присутствия |
 | `NOT_SAME_VENUE` | 409 | Участники не находятся в одном заведении |
+| `ALREADY_EXISTS` | 409 | Учётная запись с таким идентификатором уже существует |
 | `INVALID_STATE_TRANSITION` | 409 | Переход состояния невозможен |
 | `REQUEST_ALREADY_EXISTS` | 409 | Повторный запрос в рамках визита запрещён |
 | `OFFER_EXPIRED` | 409 | Предложение истекло |

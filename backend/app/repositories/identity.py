@@ -1,0 +1,133 @@
+"""Repository for the Identity context: User, Profile and ProfilePhoto data access."""
+
+from datetime import datetime, timedelta
+
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.enums import (
+    ApproachMode,
+    MediaModerationStatus,
+    VerificationStatus,
+    VerificationType,
+)
+from app.models.profile_photo import ProfilePhotoOrm
+from app.models.user import ProfileOrm, UserOrm, VerificationOrm
+
+
+class IdentityRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def find_by_auth_identity(self, provider: str, subject: str) -> UserOrm | None:
+        stmt = select(UserOrm).where(
+            UserOrm.auth_provider == provider,
+            UserOrm.auth_subject == subject,
+        )
+        return (await self._session.execute(stmt)).scalar_one_or_none()
+
+    async def create_user_with_profile(
+        self,
+        *,
+        provider: str,
+        subject: str,
+        email_normalized: str | None = None,
+    ) -> UserOrm:
+        """Create a new account with an empty, non-visible profile (onboarding §5)."""
+        user = UserOrm(
+            auth_provider=provider,
+            auth_subject=subject,
+            email_normalized=email_normalized,
+        )
+        user.profile = ProfileOrm(
+            display_name="",
+            communication_goals="",
+            default_approach_mode=ApproachMode.ASK_BEFORE_APPROACH,
+            visibility_enabled=False,
+        )
+        self._session.add(user)
+        await self._session.flush()
+        await self._session.refresh(user)
+        return user
+
+    async def get_user(self, user_id: str) -> UserOrm | None:
+        return await self._session.get(UserOrm, user_id)
+
+    async def get_profile(self, user_id: str) -> ProfileOrm | None:
+        stmt = select(ProfileOrm).where(ProfileOrm.user_id == user_id)
+        return (await self._session.execute(stmt)).scalar_one_or_none()
+
+    async def list_photos(self, user_id: str) -> list[ProfilePhotoOrm]:
+        stmt = (
+            select(ProfilePhotoOrm)
+            .where(
+                ProfilePhotoOrm.user_id == user_id,
+                ProfilePhotoOrm.deleted_at.is_(None),
+            )
+            .order_by(ProfilePhotoOrm.position.asc())
+        )
+        return list((await self._session.execute(stmt)).scalars().all())
+
+    async def get_photo(self, photo_id: str) -> ProfilePhotoOrm | None:
+        return await self._session.get(ProfilePhotoOrm, photo_id)
+
+    async def max_photo_position(self, user_id: str) -> int:
+        stmt = (
+            select(func.coalesce(func.max(ProfilePhotoOrm.position), 0))
+            .where(
+                ProfilePhotoOrm.user_id == user_id,
+                ProfilePhotoOrm.deleted_at.is_(None),
+            )
+        )
+        return (await self._session.execute(stmt)).scalar_one()
+
+    async def add_photo(
+        self,
+        *,
+        user_id: str,
+        storage_key: str,
+        public_url: str | None,
+        position: int,
+        moderation_status: MediaModerationStatus,
+    ) -> ProfilePhotoOrm:
+        photo = ProfilePhotoOrm(
+            user_id=user_id,
+            storage_key=storage_key,
+            public_url=public_url,
+            position=position,
+            moderation_status=moderation_status,
+        )
+        self._session.add(photo)
+        await self._session.flush()
+        return photo
+
+    async def add_photo_verification(self, user_id: str, now: datetime) -> None:
+        self._session.add(
+            VerificationOrm(
+                user_id=user_id,
+                type=VerificationType.PHOTO,
+                status=VerificationStatus.APPROVED,
+                verified_at=now,
+                expires_at=now + timedelta(days=30),
+            )
+        )
+        await self._session.flush()
+
+    async def is_verified_user(self, user_id: str, now: datetime) -> bool:
+        stmt = (
+            select(VerificationOrm.user_id)
+            .where(
+                VerificationOrm.user_id == user_id,
+                VerificationOrm.status == VerificationStatus.APPROVED,
+                or_(
+                    VerificationOrm.expires_at.is_(None),
+                    VerificationOrm.expires_at > now,
+                ),
+            )
+            .limit(1)
+        )
+        return (await self._session.execute(stmt)).scalar_one_or_none() is not None
+
+    async def update(self, entity: UserOrm | ProfileOrm) -> None:
+        self._session.add(entity)
+        await self._session.flush()

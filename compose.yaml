@@ -1,18 +1,43 @@
 services:
-  frontend:
-    build: ./frontend
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "5173:5173"
-      - "6006:6006"
-    depends_on:
-      - backend
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: development
     ports:
       - "8000:8000"
     environment:
       BACKEND_ENVIRONMENT: development
-      BACKEND_DATABASE_URL: sqlite:////app/data/app.db
+      BACKEND_DATABASE_URL: sqlite+aiosqlite:////app/data/app.db
+      BACKEND_MEDIA_BASE_URL: http://localhost:8000
+      BACKEND_PHOTO_STORAGE_BACKEND: minio
+      BACKEND_MINIO_ENDPOINT: minio:9000
+      BACKEND_MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      BACKEND_MINIO_ACCESS_KEY: minioadmin
+      BACKEND_MINIO_SECRET_KEY: minioadmin
+      BACKEND_MINIO_BUCKET: fluffy-parakeet
+    depends_on:
+      minio:
+        condition: service_healthy
     volumes:
       - ./backend/data:/app/data
+      - ./backend/media:/app/media
+
+volumes:
+  minio-data:
